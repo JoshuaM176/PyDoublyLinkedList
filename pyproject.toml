@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py-doubly-linked-list"
+version = "0.1.0"
+
+[[tool.setuptools.ext-modules]]
+name = "py_doubly_linked_list"
+sources = ["node.c"]
