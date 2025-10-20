@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
-#include <python3.10/Python.h>
+#include <Python.h>
+#include <structmember.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -42,7 +43,6 @@ DLLNode_clear(PyObject *op)
 static void
 DLLNode_dealloc(PyObject *op)
 {
-    PyObject_ClearWeakRefs(op);
     DLLNode* self = (DLLNode* )op;
     PyObject_GC_UnTrack(op);
     (void)DLLNode_clear(op);
@@ -121,7 +121,7 @@ static PyTypeObject DLLNodeType = {
     .tp_doc = PyDoc_STR("Node for doubly linked list"),
     .tp_basicsize = sizeof(DLLNode),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_MANAGED_WEAKREF,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
     .tp_new = DLLNode_new,
     .tp_dealloc = DLLNode_dealloc,
     .tp_traverse = DLLNode_traverse,
@@ -467,11 +467,11 @@ static int DoublyLinkedList_cursor_delete(PyObject* op){
         }
     }
     else{
-        if(!Py_IsNone(cursor->prev)){
-            Py_SETREF(((DLLNode*)(cursor->prev))->next, Py_NewRef(cursor->next));
+        if(Py_IsNone(cursor->prev)){
+            Py_SETREF(self->head, Py_NewRef(cursor->next));
         }
         else{
-            Py_SETREF(self->head, Py_NewRef(cursor->next));
+            Py_SETREF(((DLLNode*)(cursor->prev))->next, Py_NewRef(cursor->next));
         }
         Py_SETREF(((DLLNode*)(cursor->next))->prev, Py_NewRef(cursor->prev));
         Py_SETREF(self->cursor, Py_NewRef(cursor->next));
@@ -610,15 +610,15 @@ static PySequenceMethods DoublyLinkedList_sequence = {
 //Member Definition
 
 static PyMemberDef DoublyLinkedList_members[] = {
-    {"head", Py_T_OBJECT_EX, offsetof(DoublyLinkedList, head), 0,
+    {"head", T_OBJECT_EX, offsetof(DoublyLinkedList, head), 0,
      "Head node."},
-    {"tail", Py_T_OBJECT_EX, offsetof(DoublyLinkedList, tail), 0,
+    {"tail", T_OBJECT_EX, offsetof(DoublyLinkedList, tail), 0,
      "Tail node."},
-    {"cursor", Py_T_OBJECT_EX, offsetof(DoublyLinkedList, cursor), 0,
+    {"cursor", T_OBJECT_EX, offsetof(DoublyLinkedList, cursor), 0,
      "Cursor tracking most recently accessed node."},
-    {"cursor_pos", Py_T_INT, offsetof(DoublyLinkedList, cursor_pos), 0,
+    {"cursor_pos", T_INT, offsetof(DoublyLinkedList, cursor_pos), 0,
      "Index of cursor"},
-    {"length", Py_T_INT, offsetof(DoublyLinkedList, length), 0,
+    {"length", T_INT, offsetof(DoublyLinkedList, length), 0,
      "Length of list"},
     {NULL}
 };
@@ -649,13 +649,24 @@ static int doubly_linked_list_module_exec(PyObject *m)
     return 0;
 }
 
+#if PY_MINOR_VERSION >= 12
+
 static PyModuleDef_Slot py_doubly_linked_list_module_slots[] = {
     {Py_mod_exec, dllnode_module_exec},
     {Py_mod_exec, doubly_linked_list_module_exec},
-    // Just use this while using static types
     {Py_mod_multiple_interpreters, Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED},
     {0, NULL}
 };
+
+#else
+
+static PyModuleDef_Slot py_doubly_linked_list_module_slots[] = {
+    {Py_mod_exec, dllnode_module_exec},
+    {Py_mod_exec, doubly_linked_list_module_exec},
+    {0, NULL}
+};
+
+#endif
 
 static struct PyModuleDef py_doubly_linked_list_module = {
 	PyModuleDef_HEAD_INIT,
