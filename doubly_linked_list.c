@@ -1,5 +1,5 @@
 #define PY_SSIZE_T_CLEAN
-#include <python3.13/Python.h>
+#include <python3.10/Python.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -316,6 +316,22 @@ static PyObject* DoublyLinkedList_copy(PyObject* op){
     return copy;
 }
 
+static PyObject* DoublyLinkedList_reverse(PyObject* op){
+    DoublyLinkedList* self = (DoublyLinkedList* )op;
+    Py_ssize_t middle = self->length / 2;
+    PyObject* temp;
+    DLLNode* node1 = self->head;
+    DLLNode* node2 = self->tail;
+    for(int i = 0; i < middle; i++){
+        temp = node1->value;
+        node1->value = node2->value;
+        node2->value = temp;
+        node1 = node1->next;
+        node2 = node2->prev;
+    }
+    return Py_NewRef(Py_None);
+}
+
 static PyObject* DoublyLinkedList_count(PyObject* op, PyObject* args, PyObject* kwds) {
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     static char* kwlist[] = {"value", NULL};
@@ -505,6 +521,10 @@ static PyObject* DoublyLinkedList_item(PyObject* op, Py_ssize_t index){
 static int DoublyLinkedList_ass_item(PyObject* op, int index, PyObject* value) {
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     if(DoublyLinkedList_locate(self, index)) {return -1;}
+    if(!value){
+        if(DoublyLinkedList_cursor_delete(self)) {return -1;}
+        return 0;
+    }
     DLLNode* cursor = (DLLNode* )self->cursor;
     Py_SETREF(cursor->value, Py_NewRef(value));
     return 0;
@@ -572,6 +592,8 @@ static PyMethodDef DoublyLinkedList_methods[] = {
     {"pop", DoublyLinkedList_pop, METH_VARARGS|METH_KEYWORDS,
     "Remove and return item at index (default last).\nRaises IndexError if list is empty or index is out of range."},
     {"remove", DoublyLinkedList_remove, METH_VARARGS|METH_KEYWORDS,
+    "Reverse the order of the list."},
+    {"reverse", DoublyLinkedList_reverse, METH_NOARGS,
     "Remove first occurence of value.\nRaises ValueError if the value is not present."},
     {NULL, NULL, 0, NULL}
 };
