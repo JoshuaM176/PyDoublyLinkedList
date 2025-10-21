@@ -370,7 +370,7 @@ static PyObject* DoublyLinkedList_clear_method(PyObject* op){
 // Takes in DoublyLinkedList and index, locates node at that index and sets cursor to it
 static int DoublyLinkedList_locate(PyObject* op, Py_ssize_t index){
     DoublyLinkedList* self = (DoublyLinkedList* )op;
-    if(index < 0) {index = self->length - index;}
+    if(index < 0) {index = self->length + index;}
     if(index >= self->length || index < 0){
         PyErr_SetString(PyExc_IndexError, "Index out of bounds");
         return -1;
@@ -503,19 +503,46 @@ static int DoublyLinkedList_append_iterator(PyObject* op, PyObject* iterable, in
 
 // Mapping Methods
 
+static PyObject* DoublyLinkedList_subscript(PyObject* op, PyObject* slice){
+    DoublyLinkedList* self = (DoublyLinkedList* )op;
+    if(PySlice_Check(slice)) {
+        Py_ssize_t start, stop, step;
+        DoublyLinkedList* list_slice = DoublyLinkedList_new(&DoublyLinkedListType, NULL, NULL); if(!list_slice) {return NULL;}
+        DLLNode* temp;
+        if (PySlice_Unpack(slice, &start, &stop, &step) == -1) {return NULL;}
+        if(start < 0) {start = self->length + start;}
+        if(stop < 0) {stop = self->length + stop;} if(stop > self->length) {stop = self->length;}
+        if(step > 0) {
+            for(Py_ssize_t i = start; i < stop; i+=step){
+                if(DoublyLinkedList_locate(self, i)) {return NULL;}
+                temp = self->cursor;
+                if(DoublyLinkedList_cursor_insert(list_slice, temp->value, 1)) {return NULL;}
+            }
+        }
+        if(step < 0) {
+            for(Py_ssize_t i = start; i > stop; i+=step){
+                if(DoublyLinkedList_locate(self, i)) {return NULL;}
+                temp = self->cursor;
+                if(DoublyLinkedList_cursor_insert(list_slice, temp->value, 1)) {return NULL;}
+            }
+        }
+        return list_slice;
+    }
+    else if(PyLong_Check(slice)) {
+        Py_ssize_t index = PyLong_AsSsize_t(slice); if(index == -1 && PyErr_Occurred()) {return NULL;}
+        if(DoublyLinkedList_locate(self, index)) {return NULL;}
+        DLLNode* cursor = (DLLNode* )self->cursor;
+        return Py_NewRef(cursor->value);
+    }
+    else {PyErr_SetString(PyExc_TypeError, "Index must be an integer or slice"); return NULL;}
+
+}
 
 // Sequence Methods 
 
 static int DoublyLinkedList_len(PyObject* op, PyObject* args, PyObject* kwds){
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     return self->length;
-}
-
-static PyObject* DoublyLinkedList_item(PyObject* op, Py_ssize_t index){
-    DoublyLinkedList* self = (DoublyLinkedList* )op;
-    if(DoublyLinkedList_locate(self, index)) {return NULL;}
-    DLLNode* cursor = (DLLNode* )self->cursor;
-    return Py_NewRef(cursor->value);
 }
 
 static int DoublyLinkedList_ass_item(PyObject* op, int index, PyObject* value) {
@@ -598,9 +625,12 @@ static PyMethodDef DoublyLinkedList_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
+static PyMappingMethods DoublyLinkedList_map = {
+    .mp_subscript = DoublyLinkedList_subscript
+};
+
 static PySequenceMethods DoublyLinkedList_sequence = {
     .sq_length = DoublyLinkedList_len,
-    .sq_item = DoublyLinkedList_item,
     .sq_ass_item = DoublyLinkedList_ass_item,
     .sq_concat = DoublyLinkedList_concat,
     .sq_inplace_concat = DoublyLinkedList_inplace_concat,
@@ -640,6 +670,7 @@ static PyTypeObject DoublyLinkedListType = {
     .tp_methods = DoublyLinkedList_methods,
     .tp_members = DoublyLinkedList_members,
     .tp_as_sequence = &DoublyLinkedList_sequence,
+    .tp_as_mapping = &DoublyLinkedList_map
 };
 
 static int doubly_linked_list_module_exec(PyObject *m)
