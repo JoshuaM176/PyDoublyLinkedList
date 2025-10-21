@@ -65,7 +65,7 @@ DLLNode_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
             Py_DECREF(self);
             return NULL;
         }
-        self->prev = Py_NewRef(Py_None);
+        self->prev = Py_None;
         if (self->prev == NULL) {
             Py_DECREF(self);
             return NULL;
@@ -352,14 +352,7 @@ static PyObject* DoublyLinkedList_clear_method(PyObject* op){
     if(self->length == 0){
         return Py_NewRef(Py_None);
     }
-    Py_DECREF(self->cursor);
-    DLLNode* temp = self->head;
-    DLLNode* next;
-    for(int i = 0; i < self->length; i++){
-        next = temp->next;
-        Py_DECREF(temp); Py_DECREF(temp);
-        temp = next;
-    }
+    Py_DECREF(self->cursor); Py_DECREF(self->head); Py_DECREF(self->tail);
     self->head = Py_NewRef(Py_None); self->tail = Py_NewRef(Py_None); self->cursor = Py_NewRef(Py_None);
     self->length = 0; self->cursor_pos = 0;
     return Py_NewRef(Py_None);
@@ -419,28 +412,28 @@ static int DoublyLinkedList_cursor_insert(PyObject* op, PyObject* object, int fo
             self->cursor_pos += 1;
             if(Py_IsNone(cursor->next)){
                 Py_SETREF(cursor->next, node);
-                Py_SETREF(node->prev, Py_NewRef(cursor));
+                node->prev = cursor;
                 Py_SETREF(self->tail, Py_NewRef(node));
             }
             else{
                 DLLNode* temp = cursor->next;
-                Py_SETREF(node->prev, Py_NewRef(cursor));
+                node->prev = cursor;
                 Py_SETREF(node->next, Py_NewRef(temp));
                 Py_SETREF(cursor->next, Py_NewRef(node));
-                Py_SETREF(temp->prev, node);
+                temp->prev = node;
             }
         }
         else{
             if(Py_IsNone(cursor->prev)){
-                Py_SETREF(cursor->prev, node);
+                cursor->prev = node;
                 Py_SETREF(node->next, Py_NewRef(cursor));
                 Py_SETREF(self->head, Py_NewRef(node));
             }
             else{
                 DLLNode* temp = cursor->next;
                 Py_SETREF(node->next, Py_NewRef(cursor));
-                Py_SETREF(node->prev, Py_NewRef(temp));
-                Py_SETREF(cursor->prev, Py_NewRef(node));
+                node->prev = temp;
+                cursor->prev = node;
                 Py_SETREF(temp->next, node);
             }
         }
@@ -473,7 +466,7 @@ static int DoublyLinkedList_cursor_delete(PyObject* op){
         else{
             Py_SETREF(((DLLNode*)(cursor->prev))->next, Py_NewRef(cursor->next));
         }
-        Py_SETREF(((DLLNode*)(cursor->next))->prev, Py_NewRef(cursor->prev));
+        ((DLLNode*)(cursor->next))->prev = cursor->prev;
         Py_SETREF(self->cursor, Py_NewRef(cursor->next));
     }
     return 0;
