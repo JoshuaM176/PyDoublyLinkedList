@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <math.h>
+#define DEV
 
 // - - - - - DoublyLinkedListNode - - - - - //
 
@@ -20,32 +21,12 @@ static PyTypeObject DLLNodeType;
 
 // Initalization and Deallocation
 
-static int
-DLLNode_traverse(PyObject *op, visitproc visit, void *arg)
-{
-    DLLNode* self = (DLLNode* ) op;
-    Py_VISIT(self->value);
-    Py_VISIT(self->next);
-    Py_VISIT(self->prev);
-    return 0;
-}
-
-static int
-DLLNode_clear(PyObject *op)
-{
-    DLLNode* self = (DLLNode* )op;
-    Py_CLEAR(self->value);
-    Py_CLEAR(self->next);
-    Py_CLEAR(self->prev);
-    return 0;
-}
-
 static void
 DLLNode_dealloc(PyObject *op)
 {
     DLLNode* self = (DLLNode* )op;
-    PyObject_GC_UnTrack(op);
-    (void)DLLNode_clear(op);
+    Py_XDECREF(self->next);
+    Py_XDECREF(self->value);
     Py_TYPE(self)->tp_free(self);
 }
 
@@ -121,10 +102,9 @@ static PyTypeObject DLLNodeType = {
     .tp_doc = PyDoc_STR("Node for doubly linked list"),
     .tp_basicsize = sizeof(DLLNode),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = DLLNode_new,
     .tp_dealloc = DLLNode_dealloc,
-    .tp_traverse = DLLNode_traverse,
     .tp_getset = DLLNode_getsetters,
     .tp_str = DLLNode_str
 };
@@ -159,26 +139,6 @@ static int DoublyLinkedList_append_iterator(PyObject*, PyObject*, int);
 static int DoublyLinkedList_cursor_delete(PyObject*);
 
 // Initialization and deallocation
-
-static int
-DoublyLinkedList_traverse(PyObject *op, visitproc visit, void *arg)
-{
-    DoublyLinkedList* self = (DoublyLinkedList* ) op;
-    Py_VISIT(self->head);
-    Py_VISIT(self->tail);
-    Py_VISIT(self->cursor);
-    return 0;
-}
-
-static int
-DoublyLinkedList_clear(PyObject *op)
-{
-    DoublyLinkedList* self = (DoublyLinkedList* )op;
-    Py_CLEAR(self->head);
-    Py_CLEAR(self->tail);
-    Py_CLEAR(self->cursor);
-    return 0;
-}
 
 static void
 DoublyLinkedList_dealloc(PyObject *op)
@@ -396,6 +356,8 @@ static int DoublyLinkedList_locate(PyObject* op, Py_ssize_t index){
 }
 
 // Create a new node with value and inserts it forwards or backwards and sets cursor to it.
+// We don't create a reference to the prev node since we can guarentee that as long as it is in the list it will have a reference from its prev anyway.
+// This avoids cycles
 static int DoublyLinkedList_cursor_insert(PyObject* op, PyObject* object, int forward) {
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     self->length += 1;
@@ -633,6 +595,8 @@ static PySequenceMethods DoublyLinkedList_sequence = {
 
 //Member Definition
 
+#ifdef DEV
+
 static PyMemberDef DoublyLinkedList_members[] = {
     {"head", T_OBJECT_EX, offsetof(DoublyLinkedList, head), 0,
      "Head node."},
@@ -647,6 +611,12 @@ static PyMemberDef DoublyLinkedList_members[] = {
     {NULL}
 };
 
+#else
+
+static PyMemberDef DoublyLinkedList_members[] = {{NULL}};
+
+#endif
+
 // Type Definition
 
 static PyTypeObject DoublyLinkedListType = {
@@ -655,11 +625,10 @@ static PyTypeObject DoublyLinkedListType = {
     .tp_doc = PyDoc_STR("Node for doubly linked list"),
     .tp_basicsize = sizeof(DoublyLinkedList),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = DoublyLinkedList_new,
     .tp_init = DoublyLinkedList_init,
     .tp_dealloc = DoublyLinkedList_dealloc,
-    .tp_traverse = DoublyLinkedList_traverse,
     .tp_str = DoublyLinkedList_str,
     .tp_methods = DoublyLinkedList_methods,
     .tp_members = DoublyLinkedList_members,

@@ -23,12 +23,14 @@ def test_length():
     test_list.clear(); assert len(test_list) == 0
 
 def test_node_refs(): # Most changes to ref counts happen in the same two internal functions, so no need to thoroughly test every method
-	test_list = create_test_list(); assert sys.getrefcount(test_list.tail) == 4
-	assert sys.getrefcount(test_list.head) == 2
-	head = test_list.head; del test_list[0]; assert sys.getrefcount(head) == 2
-	assert sys.getrefcount(test_list.tail) == 3
-	node1 = test_list.head.next; assert sys.getrefcount(node1) == 3
-	test_list.pop(1); assert sys.getrefcount(node1) == 2
+    test_list = create_test_list(); assert sys.getrefcount(test_list.tail) == 4
+    assert sys.getrefcount(test_list.head) == 2
+    head = test_list.head; del test_list[0]; assert sys.getrefcount(head) == 2
+    assert sys.getrefcount(test_list.tail) == 3
+    node1 = test_list.head.next; assert sys.getrefcount(node1) == 3
+    test_list.pop(1); assert sys.getrefcount(node1) == 2
+    test_list = create_test_list(); node2 = test_list.head; assert(sys.getrefcount(node2)) == 3
+    test_list.clear(); assert sys.getrefcount(node2) == 2
 
 def test_cursor_pos():
     pass #TODO
