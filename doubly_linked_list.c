@@ -501,6 +501,13 @@ static int DoublyLinkedList_len(PyObject* op, PyObject* args, PyObject* kwds){
     return self->length;
 }
 
+static PyObject* DoublyLinkedList_item(PyObject* op, Py_ssize_t index){
+    DoublyLinkedList* self = (DoublyLinkedList* )op;
+    if(DoublyLinkedList_locate(self, index)) {return NULL;}
+    DLLNode* cursor = (DLLNode* )self->cursor;
+    return Py_NewRef(cursor->value);
+}
+
 static int DoublyLinkedList_ass_item(PyObject* op, int index, PyObject* value) {
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     if(DoublyLinkedList_locate(self, index)) {return -1;}
@@ -587,6 +594,7 @@ static PyMappingMethods DoublyLinkedList_map = {
 
 static PySequenceMethods DoublyLinkedList_sequence = {
     .sq_length = DoublyLinkedList_len,
+    .sq_item = DoublyLinkedList_item,
     .sq_ass_item = DoublyLinkedList_ass_item,
     .sq_concat = DoublyLinkedList_concat,
     .sq_inplace_concat = DoublyLinkedList_inplace_concat,

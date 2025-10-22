@@ -39,3 +39,5 @@ if __name__ == "__main__":
     test_length()
     test_node_refs()
 
+test_list = create_test_list()
+print(test_list[3])
