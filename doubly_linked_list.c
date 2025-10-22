@@ -196,7 +196,7 @@ static PyObject* DoublyLinkedList_insert(PyObject* op, PyObject* args, PyObject*
     DoublyLinkedList* self = (DoublyLinkedList* ) op;
     static char* kwlist[] = {"object", "index", "forward", NULL};
     PyObject* object = NULL;
-    int index;
+    Py_ssize_t index;
     int forward = 1;
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "Oi|i", kwlist,
                                      &object, &index, &forward))
@@ -243,7 +243,7 @@ static PyObject* DoublyLinkedList_index(PyObject* op, PyObject* args, PyObject* 
 static PyObject* DoublyLinkedList_pop(PyObject* op, PyObject* args, PyObject* kwds){
     DoublyLinkedList* self = (DoublyLinkedList* ) op;
     static char* kwlist[] = {"index", NULL};
-    int index = self->length-1;
+    Py_ssize_t index = self->length-1;
     if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &index)) {return NULL;}
     if(DoublyLinkedList_locate(self, index)) {return NULL;}
     DLLNode* cursor = (DLLNode* )self->cursor;
@@ -282,7 +282,7 @@ static PyObject* DoublyLinkedList_reverse(PyObject* op){
     PyObject* temp;
     DLLNode* node1 = self->head;
     DLLNode* node2 = self->tail;
-    for(int i = 0; i < middle; i++){
+    for(Py_ssize_t i = 0; i < middle; i++){
         temp = node1->value;
         node1->value = node2->value;
         node2->value = temp;
@@ -299,7 +299,7 @@ static PyObject* DoublyLinkedList_count(PyObject* op, PyObject* args, PyObject* 
     if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &value)) {return NULL;}
     DLLNode* temp = self->head;
     Py_ssize_t count = 0;
-    for(int i = 0; i<self->length; i++){
+    for(Py_ssize_t i = 0; i<self->length; i++){
         if(temp->value==value) {count += 1;}
         temp = temp->next;
     }
@@ -329,9 +329,9 @@ static int DoublyLinkedList_locate(PyObject* op, Py_ssize_t index){
         return -1;
     }
     DLLNode* search_node = self->cursor;
-    int search_distance = index-self->cursor_pos;
-    const int head_distance = index;
-    const int tail_distance = index-(self->length-1);
+    Py_ssize_t search_distance = index-self->cursor_pos;
+    const Py_ssize_t head_distance = index;
+    const Py_ssize_t tail_distance = index-(self->length-1);
     if(abs(head_distance) < abs(search_distance)){
         search_node = self->head;
         search_distance = head_distance;
@@ -341,12 +341,12 @@ static int DoublyLinkedList_locate(PyObject* op, Py_ssize_t index){
         search_distance = tail_distance;
     }
     if(search_distance>0){
-        for(int i = 0; i<search_distance; i++){
+        for(Py_ssize_t i = 0; i<search_distance; i++){
             search_node = search_node->next;
         }
     }
     else if(search_distance<0){
-        for(int i=0; i>search_distance; i--){
+        for(Py_ssize_t i=0; i>search_distance; i--){
             search_node = search_node->prev;
         }
     }
@@ -496,7 +496,7 @@ static PyObject* DoublyLinkedList_subscript(PyObject* op, PyObject* slice){
 
 // Sequence Methods 
 
-static int DoublyLinkedList_len(PyObject* op, PyObject* args, PyObject* kwds){
+static Py_ssize_t DoublyLinkedList_len(PyObject* op, PyObject* args, PyObject* kwds){
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     return self->length;
 }
@@ -508,7 +508,7 @@ static PyObject* DoublyLinkedList_item(PyObject* op, Py_ssize_t index){
     return Py_NewRef(cursor->value);
 }
 
-static int DoublyLinkedList_ass_item(PyObject* op, int index, PyObject* value) {
+static int DoublyLinkedList_ass_item(PyObject* op, Py_ssize_t index, PyObject* value) {
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     if(DoublyLinkedList_locate(self, index)) {return -1;}
     if(!value){
@@ -535,7 +535,7 @@ static PyObject* DoublyLinkedList_inplace_concat(PyObject* op, PyObject* concat)
 static int DoublyLinkedList_contains(PyObject* op, PyObject* value){
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     DLLNode* temp = self->head;
-    for(int i = 0; i<self->length; i++){
+    for(Py_ssize_t i = 0; i<self->length; i++){
         if(temp->value==value) {return 1;}
         temp = temp->next;
     }
@@ -550,7 +550,7 @@ static PyObject* DoublyLinkedList_str(PyObject* op, PyObject* Py_UNUSED(dummy)){
     PyObject* string = PyUnicode_FromString("["); if(!string) {return NULL;}
     PyObject* new_string;
     DLLNode* temp = self->head;
-    for(int i = 1; i<self->length; i++){
+    for(Py_ssize_t i = 1; i<self->length; i++){
         PyObject* node_str = DLLNode_str(temp, NULL); if(!node_str) {return NULL;}
         PyObject* format_node_str = PyUnicode_FromFormat("%U, ", node_str); if(!format_node_str) {return NULL;}
         new_string = PyUnicode_Concat(string, format_node_str); if(!new_string) {return NULL;}
