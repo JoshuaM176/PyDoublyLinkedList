@@ -103,7 +103,7 @@ static PyObject* DLLNode_str(PyObject* op, PyObject* Py_UNUSED(dummy)){
 
 static PyTypeObject DLLNodeType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "py_doubly_linked_list.DLLNode",
+    .tp_name = "py_doubly_linked_list.doubly_linked_list.DLLNode",
     .tp_doc = PyDoc_STR("Node for doubly linked list"),
     .tp_basicsize = sizeof(DLLNode),
     .tp_itemsize = 0,
@@ -111,7 +111,7 @@ static PyTypeObject DLLNodeType = {
     .tp_new = DLLNode_new,
     .tp_dealloc = DLLNode_dealloc,
     .tp_getset = DLLNode_getsetters,
-    .tp_str = DLLNode_str
+    .tp_str = (reprfunc)DLLNode_str
 };
 
 static int dllnode_module_exec(PyObject *m)
@@ -188,9 +188,9 @@ DoublyLinkedList_init(PyObject* op, PyObject *args)
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     PyObject* iterable = NULL;
     if (!PyArg_ParseTuple(args, "|O", &iterable))
-        return NULL;
+        return -1;
     if(iterable){
-        if(DoublyLinkedList_append_iterator(self, iterable, 1)) {return -1;}
+        if(DoublyLinkedList_append_iterator((PyObject*)self, iterable, 1)) {return -1;}
     }
     return 0;
 }
@@ -198,7 +198,7 @@ DoublyLinkedList_init(PyObject* op, PyObject *args)
 // Methods
 
 static PyObject* DoublyLinkedList_insert(PyObject* op, PyObject* args, PyObject* kwds){
-    DoublyLinkedList* self = (DoublyLinkedList* ) op;
+    DoublyLinkedList* self = (DoublyLinkedList*) op;
     static char* kwlist[] = {"object", "index", "forward", NULL};
     PyObject* object = NULL;
     Py_ssize_t index;
@@ -206,13 +206,13 @@ static PyObject* DoublyLinkedList_insert(PyObject* op, PyObject* args, PyObject*
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "On|i", kwlist,
                                      &object, &index, &forward))
         return NULL;
-    if(DoublyLinkedList_locate(self, index)) {return NULL;}
-    if(DoublyLinkedList_cursor_insert(self, object, forward)) {return NULL;}
+    if(DoublyLinkedList_locate((PyObject*)self, index)) {return NULL;}
+    if(DoublyLinkedList_cursor_insert((PyObject*)self, object, forward)) {return NULL;}
     return Py_NewRef(Py_None);
 }
 
 static PyObject* DoublyLinkedList_append(PyObject* op, PyObject* args, PyObject* kwds){
-    DoublyLinkedList* self = (DoublyLinkedList* ) op;
+    DoublyLinkedList* self = (DoublyLinkedList*) op;
     static char* kwlist[] = {"object", "forward", NULL};
     PyObject* object = NULL;
     int forward = 1;
@@ -221,7 +221,7 @@ static PyObject* DoublyLinkedList_append(PyObject* op, PyObject* args, PyObject*
         return NULL;
     if(forward) {Py_SETREF(self->cursor, Py_NewRef(self->tail));}
     else {Py_SETREF(self->cursor, Py_NewRef(self->head));}
-    if(DoublyLinkedList_cursor_insert(self, object, forward)) {return NULL;}
+    if(DoublyLinkedList_cursor_insert((PyObject*)self, object, forward)) {return NULL;}
     return Py_NewRef(Py_None);
 }
 
@@ -232,8 +232,8 @@ static PyObject* DoublyLinkedList_index(PyObject* op, PyObject* args, PyObject* 
     DLLNode* cursor;
     if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|nn", kwlist, &value, &start, &stop)) {return NULL;}
     for(Py_ssize_t i=start; i<stop; i++){
-        if(DoublyLinkedList_locate(self, i)) {return NULL;}
-        cursor = self->cursor;
+        if(DoublyLinkedList_locate((PyObject*)self, i)) {return NULL;}
+        cursor = (DLLNode*)self->cursor;
         if(cursor->value == value) {
             PyObject* rtn = PyLong_FromSsize_t(i); if(!rtn) {return NULL;}
             return rtn;}
@@ -250,18 +250,17 @@ static PyObject* DoublyLinkedList_pop(PyObject* op, PyObject* args, PyObject* kw
     static char* kwlist[] = {"index", NULL};
     Py_ssize_t index = self->length-1;
     if(!PyArg_ParseTupleAndKeywords(args, kwds, "|n", kwlist, &index)) {return NULL;}
-    if(DoublyLinkedList_locate(self, index)) {return NULL;}
+    if(DoublyLinkedList_locate((PyObject*)self, index)) {return NULL;}
     DLLNode* cursor = (DLLNode* )self->cursor;
     PyObject* popped = Py_NewRef(cursor->value);
-    if(DoublyLinkedList_cursor_delete(self)) {return NULL;}
+    if(DoublyLinkedList_cursor_delete((PyObject*)self)) {return NULL;}
     return popped;
 }
 
 static PyObject* DoublyLinkedList_remove(PyObject* op, PyObject* args, PyObject* kwds){
     DoublyLinkedList* self = (DoublyLinkedList* )op;
-    static char* kwlist[] = {"value", NULL};
-    if(!DoublyLinkedList_index(self, args, kwds)) {return NULL;}
-    if(DoublyLinkedList_cursor_delete(self)) {return NULL;}
+    if(!DoublyLinkedList_index((PyObject*)self, args, kwds)) {return NULL;}
+    if(DoublyLinkedList_cursor_delete((PyObject*)self)) {return NULL;}
     return Py_NewRef(Py_None);
 }
 
@@ -271,28 +270,28 @@ static PyObject* DoublyLinkedList_extend(PyObject* op, PyObject* args, PyObject*
     PyObject* iterable;
     int forward = 1;
     if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|i", kwlist, &iterable, &forward)) {return NULL;}
-    if(DoublyLinkedList_append_iterator(self, iterable, forward)) {return NULL;}
+    if(DoublyLinkedList_append_iterator((PyObject*)self, iterable, forward)) {return NULL;}
     return Py_NewRef(Py_None);
 }
 
 static PyObject* DoublyLinkedList_copy(PyObject* op){
-    DoublyLinkedList* copy = DoublyLinkedList_new(&DoublyLinkedListType, NULL, NULL); if(!copy) {return NULL;}
-    if(DoublyLinkedList_append_iterator(copy, op, 1)) {return NULL;}
-    return copy;
+    DoublyLinkedList* copy = (DoublyLinkedList*)DoublyLinkedList_new(&DoublyLinkedListType, NULL, NULL); if(!copy) {return NULL;}
+    if(DoublyLinkedList_append_iterator((PyObject*)copy, op, 1)) {return NULL;}
+    return (PyObject*)copy;
 }
 
 static PyObject* DoublyLinkedList_reverse(PyObject* op){
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     Py_ssize_t middle = self->length / 2;
     PyObject* temp;
-    DLLNode* node1 = self->head;
-    DLLNode* node2 = self->tail;
+    DLLNode* node1 = (DLLNode*)self->head;
+    DLLNode* node2 = (DLLNode*)self->tail;
     for(Py_ssize_t i = 0; i < middle; i++){
-        temp = node1->value;
+        temp = (PyObject*)node1->value;
         node1->value = node2->value;
-        node2->value = temp;
-        node1 = node1->next;
-        node2 = node2->prev;
+        node2->value = (PyObject*)temp;
+        node1 = (DLLNode*)node1->next;
+        node2 = (DLLNode*)node2->prev;
     }
     return Py_NewRef(Py_None);
 }
@@ -302,11 +301,11 @@ static PyObject* DoublyLinkedList_count(PyObject* op, PyObject* args, PyObject* 
     static char* kwlist[] = {"value", NULL};
     PyObject* value;
     if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &value)) {return NULL;}
-    DLLNode* temp = self->head;
+    DLLNode* temp = (DLLNode*)self->head;
     Py_ssize_t count = 0;
     for(Py_ssize_t i = 0; i<self->length; i++){
         if(temp->value==value) {count += 1;}
-        temp = temp->next;
+        temp = (DLLNode*)temp->next;
     }
     PyObject* rtn = PyLong_FromSsize_t(count); if(!rtn) {return NULL;}
     return rtn;
@@ -333,29 +332,29 @@ static int DoublyLinkedList_locate(PyObject* op, Py_ssize_t index){
         PyErr_SetString(PyExc_IndexError, "Index out of bounds");
         return -1;
     }
-    DLLNode* search_node = self->cursor;
+    DLLNode* search_node = (DLLNode*)self->cursor;
     Py_ssize_t search_distance = index-self->cursor_pos;
     const Py_ssize_t head_distance = index;
     const Py_ssize_t tail_distance = index-(self->length-1);
     if(abs(head_distance) < abs(search_distance)){
-        search_node = self->head;
+        search_node = (DLLNode*)self->head;
         search_distance = head_distance;
     }
     else if(abs(tail_distance) < abs(search_distance)){
-        search_node = self->tail;
+        search_node = (DLLNode*)self->tail;
         search_distance = tail_distance;
     }
     if(search_distance>0){
         for(Py_ssize_t i = 0; i<search_distance; i++){
-            search_node = search_node->next;
+            search_node = (DLLNode*)search_node->next;
         }
     }
     else if(search_distance<0){
         for(Py_ssize_t i=0; i>search_distance; i--){
-            search_node = search_node->prev;
+            search_node = (DLLNode*)search_node->prev;
         }
     }
-    Py_SETREF(self->cursor, Py_NewRef(search_node));
+    Py_SETREF(self->cursor, Py_NewRef((PyObject*)search_node));
     self->cursor_pos = index;
     return 0;
 }
@@ -364,56 +363,56 @@ static int DoublyLinkedList_locate(PyObject* op, Py_ssize_t index){
 // We don't create a reference to the prev node since we can guarentee that as long as it is in the list it will have a reference from its prev anyway.
 // This avoids cycles
 static int DoublyLinkedList_cursor_insert(PyObject* op, PyObject* object, int forward) {
-    DoublyLinkedList* self = (DoublyLinkedList* )op;
+    DoublyLinkedList* self = (DoublyLinkedList*)op;
     self->length += 1;
-    DLLNode* node = DLLNode_new(&DLLNodeType, NULL, NULL); if(!node) {return NULL;}
+    DLLNode* node = (DLLNode*)DLLNode_new(&DLLNodeType, NULL, NULL); if(!node) {return -1;}
     Py_SETREF(node->value, Py_NewRef(object));
     if(Py_IsNone(self->cursor)){
-        Py_SETREF(self->head, node);
-        Py_SETREF(self->tail, Py_NewRef(node));
-        Py_SETREF(self->cursor, Py_NewRef(node));
+        Py_SETREF(self->head, (PyObject*)node);
+        Py_SETREF(self->tail, Py_NewRef((PyObject*)node));
+        Py_SETREF(self->cursor, Py_NewRef((PyObject*)node));
     }
     else{
-        DLLNode* cursor = self->cursor;
+        DLLNode* cursor = (DLLNode*)self->cursor;
         if(forward){
             self->cursor_pos += 1;
             if(Py_IsNone(cursor->next)){
-                node->prev = cursor;
-                Py_SETREF(self->tail, Py_NewRef(node));
-		        Py_SETREF(cursor->next, node);
+                node->prev = (PyObject*)cursor;
+                Py_SETREF(self->tail, Py_NewRef((PyObject*)node));
+		        Py_SETREF(cursor->next, (PyObject*)node);
 
             }
             else{
-                DLLNode* temp = cursor->next;
-                node->prev = cursor;
-                temp->prev = node;
-                Py_SETREF(node->next, Py_NewRef(temp));
-                Py_SETREF(cursor->next, Py_NewRef(node));
+                DLLNode* temp = (DLLNode*)cursor->next;
+                node->prev = (PyObject*)cursor;
+                temp->prev = (PyObject*)node;
+                Py_SETREF(node->next, Py_NewRef((PyObject*)temp));
+                Py_SETREF(cursor->next, Py_NewRef((PyObject*)node));
             }
         }
         else{
             if(Py_IsNone(cursor->prev)){
-                cursor->prev = node;
-                Py_SETREF(self->head, Py_NewRef(node));
-                Py_SETREF(node->next, Py_NewRef(cursor));
+                cursor->prev = (PyObject*)node;
+                Py_SETREF(self->head, Py_NewRef((PyObject*)node));
+                Py_SETREF(node->next, Py_NewRef((PyObject*)cursor));
             }
             else{
-                DLLNode* temp = cursor->next;
-                node->prev = temp;
-                cursor->prev = node;
-                Py_SETREF(temp->next, node);
-                Py_SETREF(node->next, Py_NewRef(cursor));
+                DLLNode* temp = (DLLNode*)cursor->next;
+                node->prev = (PyObject*)temp;
+                cursor->prev = (PyObject*)node;
+                Py_SETREF(temp->next, (PyObject*)node);
+                Py_SETREF(node->next, Py_NewRef((PyObject*)cursor));
             }
         }
     }
-    Py_SETREF(self->cursor, Py_NewRef(node));
+    Py_SETREF(self->cursor, Py_NewRef((PyObject*)node));
     return 0;
 }
 
 static int DoublyLinkedList_cursor_delete(PyObject* op){
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     self->length -= 1;
-    DLLNode* cursor = self->cursor;
+    DLLNode* cursor = (DLLNode*)self->cursor;
     if(Py_IsNone(cursor->next)){
         if(Py_IsNone(cursor->prev)){
             Py_SETREF(self->head, Py_NewRef(Py_None));
@@ -450,7 +449,7 @@ static int DoublyLinkedList_append_iterator(PyObject* op, PyObject* iterable, in
     else {Py_SETREF(self->cursor, Py_NewRef(self->head));}
     PyObject* item;
     while((item = PyIter_Next(iterator)) != NULL){
-        if(DoublyLinkedList_cursor_insert(self, item, forward)) {return -1;}
+        if(DoublyLinkedList_cursor_insert((PyObject*)self, item, forward)) {return -1;}
         Py_DECREF(item);
     }
     if(PyErr_Occurred()){
@@ -468,31 +467,31 @@ static PyObject* DoublyLinkedList_subscript(PyObject* op, PyObject* slice){
     DoublyLinkedList* self = (DoublyLinkedList* )op;
     if(PySlice_Check(slice)) {
         Py_ssize_t start, stop, step;
-        DoublyLinkedList* list_slice = DoublyLinkedList_new(&DoublyLinkedListType, NULL, NULL); if(!list_slice) {return NULL;}
+        DoublyLinkedList* list_slice = (DoublyLinkedList*)DoublyLinkedList_new(&DoublyLinkedListType, NULL, NULL); if(!list_slice) {return NULL;}
         DLLNode* temp;
         if (PySlice_Unpack(slice, &start, &stop, &step) == -1) {return NULL;}
         if(start < 0) {start = self->length + start;}
         if(stop < 0) {stop = self->length + stop;} if(stop > self->length) {stop = self->length;}
         if(step > 0) {
             for(Py_ssize_t i = start; i < stop; i+=step){
-                if(DoublyLinkedList_locate(self, i)) {return NULL;}
-                temp = self->cursor;
-                if(DoublyLinkedList_cursor_insert(list_slice, temp->value, 1)) {return NULL;}
+                if(DoublyLinkedList_locate((PyObject*)self, i)) {return NULL;}
+                temp = (DLLNode*)self->cursor;
+                if(DoublyLinkedList_cursor_insert((PyObject*)list_slice, temp->value, 1)) {return NULL;}
             }
         }
         if(step < 0) {
             for(Py_ssize_t i = start; i > stop; i+=step){
-                if(DoublyLinkedList_locate(self, i)) {return NULL;}
-                temp = self->cursor;
-                if(DoublyLinkedList_cursor_insert(list_slice, temp->value, 1)) {return NULL;}
+                if(DoublyLinkedList_locate((PyObject*)self, i)) {return NULL;}
+                temp = (DLLNode*)self->cursor;
+                if(DoublyLinkedList_cursor_insert((PyObject*)list_slice, temp->value, 1)) {return NULL;}
             }
         }
-        return list_slice;
+        return (PyObject*)list_slice;
     }
     else if(PyLong_Check(slice)) {
         Py_ssize_t index = PyLong_AsSsize_t(slice); if(index == -1 && PyErr_Occurred()) {return NULL;}
-        if(DoublyLinkedList_locate(self, index)) {return NULL;}
-        DLLNode* cursor = self->cursor;
+        if(DoublyLinkedList_locate((PyObject*)self, index)) {return NULL;}
+        DLLNode* cursor = (DLLNode*)self->cursor;
         return Py_NewRef(cursor->value);
     }
     else {PyErr_SetString(PyExc_TypeError, "Index must be an integer or slice"); return NULL;}
@@ -508,19 +507,19 @@ static Py_ssize_t DoublyLinkedList_len(PyObject* op, PyObject* args, PyObject* k
 
 static PyObject* DoublyLinkedList_item(PyObject* op, Py_ssize_t index){
     DoublyLinkedList* self = (DoublyLinkedList* )op;
-    if(DoublyLinkedList_locate(self, index)) {return NULL;}
-    DLLNode* cursor = self->cursor;
+    if(DoublyLinkedList_locate((PyObject*)self, index)) {return NULL;}
+    DLLNode* cursor = (DLLNode*)self->cursor;
     return Py_NewRef(cursor->value);
 }
 
 static int DoublyLinkedList_ass_item(PyObject* op, Py_ssize_t index, PyObject* value) {
-    DoublyLinkedList* self = (DoublyLinkedList* )op;
-    if(DoublyLinkedList_locate(self, index)) {return -1;}
+    DoublyLinkedList* self = (DoublyLinkedList*)op;
+    if(DoublyLinkedList_locate((PyObject*)self, index)) {return -1;}
     if(!value){
-        if(DoublyLinkedList_cursor_delete(self)) {return -1;}
+        if(DoublyLinkedList_cursor_delete((PyObject*)self)) {return -1;}
         return 0;
     }
-    DLLNode* cursor = self->cursor;
+    DLLNode* cursor = (DLLNode*)self->cursor;
     Py_SETREF(cursor->value, Py_NewRef(value));
     return 0;
 }
@@ -538,11 +537,11 @@ static PyObject* DoublyLinkedList_inplace_concat(PyObject* op, PyObject* concat)
 }
 
 static int DoublyLinkedList_contains(PyObject* op, PyObject* value){
-    DoublyLinkedList* self = (DoublyLinkedList* )op;
-    DLLNode* temp = self->head;
+    DoublyLinkedList* self = (DoublyLinkedList*)op;
+    DLLNode* temp = (DLLNode*)self->head;
     for(Py_ssize_t i = 0; i<self->length; i++){
         if(temp->value==value) {return 1;}
-        temp = temp->next;
+        temp = (DLLNode*)temp->next;
     }
     return 0;
 }
@@ -554,41 +553,41 @@ static PyObject* DoublyLinkedList_str(PyObject* op, PyObject* Py_UNUSED(dummy)){
     if(self->length == 0) {return PyUnicode_FromString("[]");}
     PyObject* string = PyUnicode_FromString("["); if(!string) {return NULL;}
     PyObject* new_string;
-    DLLNode* temp = self->head;
+    DLLNode* temp = (DLLNode*)self->head;
     for(Py_ssize_t i = 1; i<self->length; i++){
-        PyObject* node_str = DLLNode_str(temp, NULL); if(!node_str) {return NULL;}
+        PyObject* node_str = DLLNode_str((PyObject*)temp, NULL); if(!node_str) {return NULL;}
         PyObject* format_node_str = PyUnicode_FromFormat("%U, ", node_str); if(!format_node_str) {return NULL;}
         new_string = PyUnicode_Concat(string, format_node_str); if(!new_string) {return NULL;}
         Py_DECREF(node_str); Py_DECREF(format_node_str); Py_DECREF(string);
         string = new_string;
-        temp = temp->next;
+        temp = (DLLNode*)temp->next;
     }
-    new_string = PyUnicode_Concat(string, PyUnicode_FromFormat("%U]", DLLNode_str(temp, NULL)));
+    new_string = PyUnicode_Concat(string, PyUnicode_FromFormat("%U]", DLLNode_str((PyObject*)temp, NULL)));
     Py_DECREF(string);
     string = new_string;
     return string;
 }
 
 static PyMethodDef DoublyLinkedList_methods[] = {
-    {"append", DoublyLinkedList_append, METH_VARARGS|METH_KEYWORDS,
+    {"append", (PyCFunction)DoublyLinkedList_append, METH_VARARGS|METH_KEYWORDS,
     "Append object to the end of the list. Set forward to false to append to the start."},
-    {"clear", DoublyLinkedList_clear_method, METH_NOARGS,
+    {"clear", (PyCFunction)DoublyLinkedList_clear_method, METH_NOARGS,
     "Remove all items from the list."},
-    {"copy", DoublyLinkedList_copy, METH_NOARGS,
+    {"copy", (PyCFunction)DoublyLinkedList_copy, METH_NOARGS,
     "Return a shallow copy of the list."},
-    {"count", DoublyLinkedList_count, METH_VARARGS|METH_KEYWORDS,
+    {"count", (PyCFunction)DoublyLinkedList_count, METH_VARARGS|METH_KEYWORDS,
     "Return number of occurrences of value in the list."},
-    {"extend", DoublyLinkedList_extend, METH_VARARGS|METH_KEYWORDS,
+    {"extend", (PyCFunction)DoublyLinkedList_extend, METH_VARARGS|METH_KEYWORDS,
     "Extend list by appending elements from the iterable. Set forward to false to extend from the start."},
-    {"index", DoublyLinkedList_index, METH_VARARGS|METH_KEYWORDS,
+    {"index", (PyCFunction)DoublyLinkedList_index, METH_VARARGS|METH_KEYWORDS,
     "Return first index of value.\nRaises ValueError if the value is not present."},
-    {"insert", DoublyLinkedList_insert, METH_VARARGS|METH_KEYWORDS,
+    {"insert", (PyCFunction)DoublyLinkedList_insert, METH_VARARGS|METH_KEYWORDS,
      "Insert object after index. Set forward to false to insert before index."},
-    {"pop", DoublyLinkedList_pop, METH_VARARGS|METH_KEYWORDS,
+    {"pop", (PyCFunction)DoublyLinkedList_pop, METH_VARARGS|METH_KEYWORDS,
     "Remove and return item at index (default last).\nRaises IndexError if list is empty or index is out of range."},
-    {"remove", DoublyLinkedList_remove, METH_VARARGS|METH_KEYWORDS,
+    {"remove", (PyCFunction)DoublyLinkedList_remove, METH_VARARGS|METH_KEYWORDS,
     "Remove first occurence of value.\nRaises ValueError if the value is not present."},
-    {"reverse", DoublyLinkedList_reverse, METH_NOARGS,
+    {"reverse", (PyCFunction)DoublyLinkedList_reverse, METH_NOARGS,
     "Reverse the order of the list."},
     {NULL, NULL, 0, NULL}
 };
@@ -598,7 +597,7 @@ static PyMappingMethods DoublyLinkedList_map = {
 };
 
 static PySequenceMethods DoublyLinkedList_sequence = {
-    .sq_length = DoublyLinkedList_len,
+    .sq_length = (lenfunc)DoublyLinkedList_len,
     .sq_item = DoublyLinkedList_item,
     .sq_ass_item = DoublyLinkedList_ass_item,
     .sq_concat = DoublyLinkedList_concat,
@@ -634,15 +633,15 @@ static PyMemberDef DoublyLinkedList_members[] = {{NULL}};
 
 static PyTypeObject DoublyLinkedListType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "py_doubly_linked_list.DoublyLinkedList",
+    .tp_name = "py_doubly_linked_list.doubly_linked_list.DoublyLinkedList",
     .tp_doc = PyDoc_STR("Node for doubly linked list"),
     .tp_basicsize = sizeof(DoublyLinkedList),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_new = DoublyLinkedList_new,
-    .tp_init = DoublyLinkedList_init,
-    .tp_dealloc = DoublyLinkedList_dealloc,
-    .tp_str = DoublyLinkedList_str,
+    .tp_new = (newfunc)DoublyLinkedList_new,
+    .tp_init = (initproc)DoublyLinkedList_init,
+    .tp_dealloc = (destructor)DoublyLinkedList_dealloc,
+    .tp_str = (reprfunc)DoublyLinkedList_str,
     .tp_methods = DoublyLinkedList_methods,
     .tp_members = DoublyLinkedList_members,
     .tp_as_sequence = &DoublyLinkedList_sequence,
@@ -682,11 +681,11 @@ static PyModuleDef_Slot py_doubly_linked_list_module_slots[] = {
 
 static struct PyModuleDef py_doubly_linked_list_module = {
 	PyModuleDef_HEAD_INIT,
-	"py_doubly_linked_list",
+	"py_doubly_linked_list.doubly_linked_list",
 	"A library implementing a doubly linked list for python",
 	.m_slots = py_doubly_linked_list_module_slots
 };
 
-PyMODINIT_FUNC PyInit_py_doubly_linked_list(void) {
+PyMODINIT_FUNC PyInit_doubly_linked_list(void) {
 	return PyModuleDef_Init(&py_doubly_linked_list_module);
 }
