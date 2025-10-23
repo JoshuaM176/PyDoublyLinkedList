@@ -7,8 +7,13 @@ name = "py-doubly-linked-list"
 version = "0.1.0"
 description = "A library adding doubly linked lists to python."
 readme = "README.MD"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 authors = [ {name = "Joshua Morningstar", email = "joshuam18745@gmail.com"} ]
+license = "MIT"
+license-files = [
+    "LICENSE",
+    "README.MD"
+]
 
 [[tool.setuptools.ext-modules]]
 name = "py_doubly_linked_list"
