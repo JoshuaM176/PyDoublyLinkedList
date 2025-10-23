@@ -32,22 +32,22 @@ Return first index of value. Raises ValueError if the value is not present.
 ```Python
 doubly_linked_list.index(value: Any, start: int, stop: int)
 ```
-- insert
+- insert  
 Insert object after index. Set forward to false to insert before index.  
 ```Python
 doubly_linked_list.insert(object: Any, index: int, forward: bool = True)
 ```
-- pop
+- pop  
 Remove and return item at index (default last). Raises IndexError if list is empty or index is out of range.  
 ```Python
 doubly_linked_list.pop(index: int = -1)
 ```
-- remove
+- remove  
 Remove first occurence of value. Raises ValueError if the value is not present.  
 ```Python
 doubly_linked_list.remove(value: Any)
 ```
-- reverse
+- reverse  
 Reverse the order of the list.  
 ```Python
 doubly_linked_list.reverse()
