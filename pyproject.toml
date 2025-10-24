@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "py-doubly-linked-list"
-version = "0.1.0"
+version = "0.1.0a2"
 description = "A library adding doubly linked lists to python."
 readme = "README.MD"
 requires-python = ">=3.9"
 authors = [ {name = "Joshua Morningstar", email = "joshuam18745@gmail.com"} ]
+maintainers = [ {name = "Joshua Morningstar", email = "joshuam18745@gmail.com"} ]
 license = "MIT"
 license-files = [
     "LICENSE",
