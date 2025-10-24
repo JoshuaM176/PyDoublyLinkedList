@@ -32,6 +32,8 @@ jobs:
     environment:
       name: testpypi
       url: https://test.pypi.org/p/py-doubly-linked-list
+    permissions:
+      id-token: write
 
     steps:
     - uses: actions/download-artifact@v5
@@ -42,5 +44,4 @@ jobs:
     - name: Publish package distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        password: ${{ secrets.TEMP_PYPI }}
         repository-url: https://test.pypi.org/legacy/
