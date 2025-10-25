@@ -9,6 +9,7 @@ description = "A library adding doubly linked lists to python."
 readme = "README.MD"
 requires-python = ">=3.9"
 authors = [ {name = "Joshua Morningstar", email = "joshuam18745@gmail.com"} ]
+maintainers = [ {name = "Joshua Morningstar", email = "joshuam18745@gmail.com"} ]
 license = "MIT"
 license-files = [
     "LICENSE",
