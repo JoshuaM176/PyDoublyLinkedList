@@ -329,21 +329,21 @@ static void swap(PyObject* op, PyObject* node1, PyObject* node2) {
     DLLNode* temp1 = (DLLNode*)node1;
     DLLNode* temp2 = (DLLNode*)node2;
     if(Py_IsNone(temp1->prev)) {
-        self->head = temp2;
+        self->head = (PyObject*)temp2;
     }
     else{
-        ((DLLNode*)(temp1->prev))->next = temp2;
+        ((DLLNode*)(temp1->prev))->next = (PyObject*)temp2;
     }
     if(Py_IsNone(temp2->next)){
-        Py_SETREF(self->tail, temp1);
+        Py_SETREF(self->tail, (PyObject*)temp1);
     }
     else{
-        ((DLLNode*)(temp2->next))->prev = temp1;
+        ((DLLNode*)(temp2->next))->prev = (PyObject*)temp1;
     }
     temp1->next = temp2->next;
     temp2->prev = temp1->prev;
-    temp2->next = temp1;
-    temp1->prev = temp2;
+    temp2->next = (PyObject*)temp1;
+    temp1->prev = (PyObject*)temp2;
 }
 
 static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* kwds) {
@@ -362,7 +362,7 @@ static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* k
 		if(!PyCallable_Check(key)) {
 			PyErr_SetString(PyExc_TypeError, "Key must be a callable"); return NULL; }
 		for(int i = 0; i < self->length; i++) {
-			PyObject* value_key = PyObject_CallOneArg(key, (PyObject*)temp->value);
+			PyObject* value_key = PyObject_CallOneArg(key, temp->value);
 			if(!value_key) { return NULL; }
 			temp->key = value_key;
 			temp = (DLLNode*)temp->next;
