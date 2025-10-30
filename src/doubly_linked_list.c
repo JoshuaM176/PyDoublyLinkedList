@@ -367,24 +367,18 @@ static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* k
 			temp->key = value_key;
 			temp = (DLLNode*)temp->next;
 		}
-		temp = (DLLNode*)self->head;
 
+		temp = (DLLNode*)self->head;
 		for(int i = 1; i < self->length; i++) {
         	temp = next;
         	next = (DLLNode*)temp->next;
-        	prev = (DLLNode*)temp->prev;
-        	comparison = PyObject_RichCompareBool(temp->key, prev->key, operator);
-        	if(comparison == -1) {return NULL;}
-        	if(comparison) {
-            	swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);
-            	for(int j = i - 1; j >= 1; j--) {
-                	prev = (DLLNode*)temp->prev;
-                	comparison = PyObject_RichCompareBool(temp->key, prev->key, operator);
-                	if(comparison == -1) { return NULL; }
-                	if(comparison){swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);}
-                	else { j = -1 ;}
-            	}
-        	}
+            for(int j = i; j >= 1; j--) {
+                prev = (DLLNode*)temp->prev;
+                comparison = PyObject_RichCompareBool(temp->key, prev->key, operator);
+                if(comparison == -1) { return NULL; }
+                if(comparison){swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);}
+                else { break; }
+            }
     	}
 		temp = (DLLNode*)self->head;
 		for(int i =0; i < self->length; i++) {
@@ -399,18 +393,12 @@ static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* k
     	for(int i = 1; i < self->length; i++) {
         	temp = next;
         	next = (DLLNode*)temp->next;
-        	prev = (DLLNode*)temp->prev;
-        	comparison = PyObject_RichCompareBool(temp->value, prev->value, operator);
-        	if(comparison == -1) {return NULL;}
-        	if(comparison) {
-            	swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);
-            	for(int j = i - 1; j >= 1; j--) {
-                	prev = (DLLNode*)temp->prev;
-                	comparison = PyObject_RichCompareBool(temp->value, prev->value, operator);
-                	if(comparison == -1) { return NULL; }
-                	if(comparison){swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);}
-                	else { j = -1 ;}
-            	}
+            for(int j = i; j >= 1; j--) {
+                prev = (DLLNode*)temp->prev;
+                comparison = PyObject_RichCompareBool(temp->value, prev->value, operator);
+                if(comparison == -1) { return NULL; }
+                if(comparison){swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);}
+                else { break; }
         	}
     	}
     	self->cursor_pos = 0;
