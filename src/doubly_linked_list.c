@@ -357,7 +357,6 @@ static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* k
     DLLNode* next = (DLLNode*)temp->next;
     DLLNode* prev;
     int comparison;
-	int (*NodeCompare)(PyObject*, PyObject*, int);
 
     if(key) {
 		if(!PyCallable_Check(key)) {
