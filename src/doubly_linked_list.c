@@ -19,6 +19,7 @@ typedef struct {
 	PyObject* value;
     PyObject* next;
     PyObject* prev;
+	PyObject* key;
 } DLLNode;
 
 static PyTypeObject DLLNodeType;
@@ -356,27 +357,67 @@ static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* k
     DLLNode* next = (DLLNode*)temp->next;
     DLLNode* prev;
     int comparison;
-    if(key) {return NULL;}
-    for(int i = 1; i < self->length; i++) {
-        temp = next;
-        next = (DLLNode*)temp->next;
-        prev = (DLLNode*)temp->prev;
-        comparison = PyObject_RichCompareBool(temp->value, prev->value, operator);
-        if(comparison == -1) {return NULL;}
-        if(comparison) {
-            swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);
-            for(int j = i - 1; j >= 1; j--) {
-                prev = (DLLNode*)temp->prev;
-                comparison = PyObject_RichCompareBool((PyObject*)temp->value, (PyObject*)prev->value, operator);
-                if(comparison == -1) { return NULL; }
-                if(comparison){swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);}
-                else { j = -1 ;}
-            }
-        }
-    }
-    self->cursor_pos = 0;
-    Py_SETREF(self->cursor, Py_NewRef(self->head));
-    return Py_NewRef(Py_None);
+	int (*NodeCompare)(PyObject*, PyObject*, int);
+
+    if(key) {
+		if(!PyCallable_Check(key)) {
+			PyErr_SetString(PyExc_TypeError, "Key must be a callable"); return NULL; }
+		for(int i = 0; i < self->length; i++) {
+			PyObject* value_key = PyObject_CallOneArg(key, (PyObject*)temp->value);
+			if(!value_key) { return NULL; }
+			temp->key = value_key;
+			temp = (DLLNode*)temp->next;
+		}
+		temp = (DLLNode*)self->head;
+
+		for(int i = 1; i < self->length; i++) {
+        	temp = next;
+        	next = (DLLNode*)temp->next;
+        	prev = (DLLNode*)temp->prev;
+        	comparison = PyObject_RichCompareBool(temp->key, prev->key, operator);
+        	if(comparison == -1) {return NULL;}
+        	if(comparison) {
+            	swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);
+            	for(int j = i - 1; j >= 1; j--) {
+                	prev = (DLLNode*)temp->prev;
+                	comparison = PyObject_RichCompareBool(temp->key, prev->key, operator);
+                	if(comparison == -1) { return NULL; }
+                	if(comparison){swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);}
+                	else { j = -1 ;}
+            	}
+        	}
+    	}
+		temp = (DLLNode*)self->head;
+		for(int i =0; i < self->length; i++) {
+			Py_DECREF(temp->key);
+			temp = (DLLNode*)temp->next;
+		}
+		self->cursor_pos = 0;
+    	Py_SETREF(self->cursor, Py_NewRef(self->head));
+    	return Py_NewRef(Py_None);
+	}
+	else{
+    	for(int i = 1; i < self->length; i++) {
+        	temp = next;
+        	next = (DLLNode*)temp->next;
+        	prev = (DLLNode*)temp->prev;
+        	comparison = PyObject_RichCompareBool(temp->value, prev->value, operator);
+        	if(comparison == -1) {return NULL;}
+        	if(comparison) {
+            	swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);
+            	for(int j = i - 1; j >= 1; j--) {
+                	prev = (DLLNode*)temp->prev;
+                	comparison = PyObject_RichCompareBool(temp->value, prev->value, operator);
+                	if(comparison == -1) { return NULL; }
+                	if(comparison){swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);}
+                	else { j = -1 ;}
+            	}
+        	}
+    	}
+    	self->cursor_pos = 0;
+    	Py_SETREF(self->cursor, Py_NewRef(self->head));
+    	return Py_NewRef(Py_None);
+	}
 }
 
 // Internal Methods
