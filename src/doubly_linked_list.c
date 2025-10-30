@@ -322,6 +322,63 @@ static PyObject* DoublyLinkedList_clear_method(PyObject* op){
     return Py_NewRef(Py_None);
 }
 
+//Helper method for sort, swaps two nodes that are next to each
+static void swap(PyObject* op, PyObject* node1, PyObject* node2) {
+    DoublyLinkedList* self = (DoublyLinkedList*)op;
+    DLLNode* temp1 = (DLLNode*)node1;
+    DLLNode* temp2 = (DLLNode*)node2;
+    if(Py_IsNone(temp1->prev)) {
+        self->head = temp2;
+    }
+    else{
+        ((DLLNode*)(temp1->prev))->next = temp2;
+    }
+    if(Py_IsNone(temp2->next)){
+        Py_SETREF(self->tail, temp1);
+    }
+    else{
+        ((DLLNode*)(temp2->next))->prev = temp1;
+    }
+    temp1->next = temp2->next;
+    temp2->prev = temp1->prev;
+    temp2->next = temp1;
+    temp1->prev = temp2;
+}
+
+static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* kwds) {
+    DoublyLinkedList* self = (DoublyLinkedList* )op;
+    char* kwlist[] = {"key", "reverse", NULL};
+    PyObject* key = NULL; int reverse = 0;
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, "|Oi", kwlist, &key, &reverse)) { return NULL; }
+    int operator;
+    if(reverse) { operator = Py_GT; } else { operator = Py_LT; }
+    DLLNode* temp = (DLLNode*)self->head;
+    DLLNode* next = (DLLNode*)temp->next;
+    DLLNode* prev;
+    int comparison;
+    if(key) {return NULL;}
+    for(int i = 1; i < self->length; i++) {
+        temp = next;
+        next = (DLLNode*)temp->next;
+        prev = (DLLNode*)temp->prev;
+        comparison = PyObject_RichCompareBool(temp->value, prev->value, operator);
+        if(comparison == -1) {return NULL;}
+        if(comparison) {
+            swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);
+            for(int j = i - 1; j >= 1; j--) {
+                prev = (DLLNode*)temp->prev;
+                comparison = PyObject_RichCompareBool((PyObject*)temp->value, (PyObject*)prev->value, operator);
+                if(comparison == -1) { return NULL; }
+                if(comparison){swap((PyObject*)self, (PyObject*)prev, (PyObject*)temp);}
+                else { j = -1 ;}
+            }
+        }
+    }
+    self->cursor_pos = 0;
+    Py_SETREF(self->cursor, Py_NewRef(self->head));
+    return Py_NewRef(Py_None);
+}
+
 // Internal Methods
 
 // Takes in DoublyLinkedList and index, locates node at that index and sets cursor to it
@@ -397,7 +454,7 @@ static int DoublyLinkedList_cursor_insert(PyObject* op, PyObject* object, int fo
                 Py_SETREF(node->next, Py_NewRef((PyObject*)cursor));
             }
             else{
-                DLLNode* temp = (DLLNode*)cursor->next;
+                DLLNode* temp = (DLLNode*)cursor->prev;
                 node->prev = (PyObject*)temp;
                 cursor->prev = (PyObject*)node;
                 Py_SETREF(temp->next, (PyObject*)node);
@@ -589,6 +646,8 @@ static PyMethodDef DoublyLinkedList_methods[] = {
     "Remove first occurence of value.\nRaises ValueError if the value is not present."},
     {"reverse", (PyCFunction)DoublyLinkedList_reverse, METH_NOARGS,
     "Reverse the order of the list."},
+    {"sort", (PyCFunction)DoublyLinkedList_sort, METH_VARARGS|METH_KEYWORDS,
+    "In-place sort in ascending order, equal objects are not swapped. Key can be applied to values and the list will be sorted based on the result of applying the key. Reverse will reverse the sort order."},
     {NULL, NULL, 0, NULL}
 };
 
