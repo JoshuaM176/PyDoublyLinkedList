@@ -52,6 +52,11 @@ Reverse the order of the list.
 ```Python
 doubly_linked_list.reverse()
 ```
+- sort  
+In-place sort in ascending order, equal objects are not swapped. Key can be applied to values and the list will be sorted based on the result of applying the key. Reverse will reverse the sort order.
+```Python
+doubly_linked_list.sort(reverse: bool = False, key: (Any) -> SupportsRichComparison = None)
+```
 The DoublyLinkedList also supports:
 - concatenation with other iterables
 - in-place concatenation with other iterables
