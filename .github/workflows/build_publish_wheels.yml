@@ -56,7 +56,7 @@ jobs:
   pypi-publish:
     name: Publish to pypi
     runs-on: ubuntu-latest
-    if: inputs.pypi_deploy && github.ref == '/refs/heads/main'
+    if: inputs.pypi_deploy && github.ref == 'refs/heads/main'
     needs: [build_wheels, build_sdist]
     environment:
       name: pypi
@@ -83,7 +83,7 @@ jobs:
   testpypi-publish:
     name: Publish to testpypi
     runs-on: ubuntu-latest
-    if: inputs.pypi_deploy && github.ref != '/refs/heads/main'
+    if: inputs.pypi_deploy && github.ref != 'refs/heads/main'
     needs: [build_wheels, build_sdist]
     environment:
       name: testpypi
