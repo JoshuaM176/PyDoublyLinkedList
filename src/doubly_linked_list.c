@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <math.h>
+#include <omp.h>
 #if PY_MINOR_VERSION < 10
     #define Py_IsNone(x) Py_Is((x), Py_None) // Define these so that we can use them on older versions
     #define Py_Is(x,y) ((x) == (y))
@@ -407,6 +408,16 @@ static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* k
 	}
 }
 
+static PyObject* DoublyLinkedList_merge_sort(PyObject* op, PyObject* args, PyObject* kwds) {
+    DoublyLinkedList* self = (DoublyLinkedList* )op;
+    char* kwlist[] = {"threads", "key", "reverse", NULL};
+    int threads = 1; PyObject* key = NULL; int reverse = 0;
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, "|iOi", kwlist, &key, &reverse)) { return NULL; }
+    int operator;
+    if(reverse) { operator = Py_GT; } else { operator = Py_LT; }
+	return Py_NewRef(Py_None); 
+}
+
 // Internal Methods
 
 // Takes in DoublyLinkedList and index, locates node at that index and sets cursor to it
@@ -676,7 +687,9 @@ static PyMethodDef DoublyLinkedList_methods[] = {
     "Reverse the order of the list."},
     {"sort", (PyCFunction)DoublyLinkedList_sort, METH_VARARGS|METH_KEYWORDS,
     "In-place sort in ascending order, equal objects are not swapped. Key can be applied to values and the list will be sorted based on the result of applying the key. Reverse will reverse the sort order."},
-    {NULL, NULL, 0, NULL}
+    {"merge_sort", (PyCFunction)DoublyLinkedList_merge_sort, METH_VARARGS|METH_KEYWORDS,
+    "In-place sort in ascending order, equal objects are not swapped. Key can be applied to values and the list will be sorted based on the result of applying the key. Reverse will reverse the sort order."},
+	{NULL, NULL, 0, NULL}
 };
 
 static PyMappingMethods DoublyLinkedList_map = {
