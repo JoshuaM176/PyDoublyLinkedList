@@ -12,7 +12,13 @@
         return obj;
     }
 #endif
-// - - - - - DoublyLinkedListNode - - - - - //
+
+// Typedefs
+
+typedef struct {
+	PyObject_HEAD
+    PyObject* next;
+} DoublyLinkedListIterator;
 
 typedef struct {
 	PyObject_HEAD
@@ -21,6 +27,8 @@ typedef struct {
     PyObject* prev;
 	PyObject* key;
 } DLLNode;
+
+// - - - - - DoublyLinkedListNode - - - - - //
 
 static PyTypeObject DLLNodeType;
 
@@ -653,6 +661,18 @@ static PyObject* DoublyLinkedList_str(PyObject* op, PyObject* Py_UNUSED(dummy)){
     return string;
 }
 
+static PyObject* DoublyLinkedListIterator_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+static int DoublyLinkedListIterator_init(PyObject *op, PyObject *args);
+static PyTypeObject DoublyLinkedListIteratorType;
+
+static PyObject* DoublyLinkedList_iter(PyObject* op, PyObject* Py_UNUSED(dummy)){
+    DoublyLinkedList* self = (DoublyLinkedList*)op;
+    DoublyLinkedListIterator* iterator = (DoublyLinkedListIterator*)DoublyLinkedListIterator_new(&DoublyLinkedListIteratorType, NULL, NULL);
+    if(!iterator) { return NULL; }
+    if(DoublyLinkedListIterator_init(iterator, PyTuple_Pack(1, self)) == -1) { return NULL; }
+    return (PyObject*)iterator;
+}
+
 static PyMethodDef DoublyLinkedList_methods[] = {
     {"append", (PyCFunction)DoublyLinkedList_append, METH_VARARGS|METH_KEYWORDS,
     "Append object to the end of the list. Set forward to false to append to the start."},
@@ -721,7 +741,7 @@ static PyMemberDef DoublyLinkedList_members[] = {{NULL}};
 static PyTypeObject DoublyLinkedListType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "py_doubly_linked_list.doubly_linked_list.DoublyLinkedList",
-    .tp_doc = PyDoc_STR("Node for doubly linked list"),
+    .tp_doc = PyDoc_STR("DoublyLinkedList class"),
     .tp_basicsize = sizeof(DoublyLinkedList),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
@@ -732,7 +752,8 @@ static PyTypeObject DoublyLinkedListType = {
     .tp_methods = DoublyLinkedList_methods,
     .tp_members = DoublyLinkedList_members,
     .tp_as_sequence = &DoublyLinkedList_sequence,
-    .tp_as_mapping = &DoublyLinkedList_map
+    .tp_as_mapping = &DoublyLinkedList_map,
+    .tp_iter = (getiterfunc)DoublyLinkedList_iter
 };
 
 static int doubly_linked_list_module_exec(PyObject *m)
@@ -747,11 +768,90 @@ static int doubly_linked_list_module_exec(PyObject *m)
     return 0;
 }
 
+// - - - - - DoublyLinkedListIterator - - - - - //
+
+// Initalization and Deallocation
+
+static void
+DoublyLinkedListIterator_dealloc(PyObject *op)
+{
+    DoublyLinkedListIterator* self = (DoublyLinkedListIterator* )op;
+    Py_XDECREF(self->next);
+    Py_TYPE(self)->tp_free(self);
+}
+
+static PyObject *
+DoublyLinkedListIterator_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    DoublyLinkedListIterator *self;
+    self = (DoublyLinkedListIterator*) type->tp_alloc(type, 0);
+    if (self != NULL) {
+        self->next = Py_NewRef(Py_None);
+        if (self->next == NULL) {
+            Py_DECREF(self);
+            return NULL;
+        }
+    }
+    return (PyObject*) self;
+}
+
+static int
+DoublyLinkedListIterator_init(PyObject* op, PyObject *args)
+{
+    DoublyLinkedListIterator* self = (DoublyLinkedList* )op;
+    PyObject* doubly_linked_list = NULL;
+    if (!PyArg_ParseTuple(args, "O", &doubly_linked_list))
+        return -1;
+    self->next = Py_NewRef(((DoublyLinkedList*)doubly_linked_list)->head);
+    return 0;
+}
+
+static PyObject* DoublyLinkedListIterator_iter(PyObject* op) {
+    return op;
+}
+
+static PyObject* DoublyLinkedListIterator_next(PyObject* op) {
+    DoublyLinkedListIterator* self = (DoublyLinkedListIterator*)op;
+    if(Py_IsNone(self->next)) { return NULL; }
+    PyObject* rtn = Py_NewRef(((DLLNode*)self->next)->value);
+    Py_SETREF(self->next, Py_NewRef(((DLLNode*)self->next)->next));
+    return rtn;
+}
+
+// Type Definition
+
+static PyTypeObject DoublyLinkedListIteratorType = {
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "py_doubly_linked_list.doubly_linked_list.DoublyLinkedListIterator",
+    .tp_doc = PyDoc_STR("Iterator for doubly linked list"),
+    .tp_basicsize = sizeof(DoublyLinkedListIterator),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = (newfunc)DoublyLinkedListIterator_new,
+    .tp_init = (initproc)DoublyLinkedListIterator_init,
+    .tp_dealloc = (destructor)DoublyLinkedListIterator_dealloc,
+    .tp_iter = (getiterfunc)DoublyLinkedListIterator_iter,
+    .tp_iternext = (iternextfunc)DoublyLinkedListIterator_next
+};
+
+static int doubly_linked_list_iterator_module_exec(PyObject *m)
+{
+    if (PyType_Ready(&DoublyLinkedListIteratorType) < 0) {return -1;}
+    Py_INCREF(&DoublyLinkedListIteratorType);
+    if (PyModule_AddObject(m, "DoublyLinkedListIterator", (PyObject *) &DoublyLinkedListIteratorType) < 0) {
+        Py_DECREF(&DoublyLinkedListIteratorType);
+        Py_DECREF(m);
+        return -1;
+    }
+    return 0;
+}
+
 #if PY_MINOR_VERSION >= 12
 
 static PyModuleDef_Slot py_doubly_linked_list_module_slots[] = {
     {Py_mod_exec, dllnode_module_exec},
     {Py_mod_exec, doubly_linked_list_module_exec},
+    {Py_mod_exec, doubly_linked_list_iterator_module_exec},
     {Py_mod_multiple_interpreters, Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED},
     {0, NULL}
 };

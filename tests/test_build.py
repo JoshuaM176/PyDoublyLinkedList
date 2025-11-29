@@ -1,4 +1,5 @@
 from py_doubly_linked_list import DoublyLinkedList
+
 import sys
 import weakref
 
@@ -28,3 +29,7 @@ def test_dereferencing():
     reference = weakref.ref(test_list[0])
     test_list.clear()
     assert reference() is None
+
+if __name__ == "__main__":
+    test_length()
+    test_dereferencing()
