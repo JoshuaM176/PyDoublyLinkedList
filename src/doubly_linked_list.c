@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <math.h>
-#include <omp.h>
+#include <mpi.h>
 #if PY_MINOR_VERSION < 10
     #define Py_IsNone(x) Py_Is((x), Py_None) // Define these so that we can use them on older versions
     #define Py_Is(x,y) ((x) == (y))
@@ -408,13 +408,95 @@ static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* k
 	}
 }
 
+static void merge_sort(double* list, int start, int end) {
+    if(end-start == 0) { return; }
+    if(end-start == 1) {
+        if(list[start] < list[end]) {
+            int temp = list[start];
+            list[start] = list[end];
+            list[end] = temp;
+        }
+        return;
+    }
+    int start1 = start1;
+    int start2 = end - (end-start)/2;
+    int end1 = start2-1;
+    int end2 = end;
+    merge_sort(&list, start1, end1);
+    merge_sort(&list, start2, end2);
+    double* temp_list = malloc(sizeof(double)*(end-start+1));
+    int cursor1 = start1;
+    int cursor2 = start2;
+    int cursor = 0;
+    while(cursor1 <= end1 && cursor2 <= end2) {
+        if(list[cursor1] < list[cursor2]) {
+            temp_list[cursor] = list[cursor1];
+            cursor1++;
+        }
+        else{
+            temp_list[cursor] = list[cursor2];
+            cursor2++;
+        }
+        cursor++;
+    }
+    if(cursor1 == end1) {
+        for(int i = cursor2; i <= end2; i++) {
+            temp_list[cursor] = list[cursor2];
+            cursor++;
+        }
+    }
+    else{
+        for(int i = cursor1; i <= end1; i++) {
+            temp_list[cursor] = list[cursor1];
+            cursor++;
+        }     
+    }
+    cursor = start;
+    for(int i = 0; i < end-start+1; i++) {
+        list[cursor] = temp_list[i];
+        cursor++;
+    }
+    free(temp_list);
+    return;
+}
+
+static void merge_proc(double* list, int start, int end, int rank, int sending_rank) {}
+
 static PyObject* DoublyLinkedList_merge_sort(PyObject* op, PyObject* args, PyObject* kwds) {
     DoublyLinkedList* self = (DoublyLinkedList* )op;
-    char* kwlist[] = {"threads", "key", "reverse", NULL};
-    int threads = 1; PyObject* key = NULL; int reverse = 0;
-    if(!PyArg_ParseTupleAndKeywords(args, kwds, "|iOi", kwlist, &key, &reverse)) { return NULL; }
+    char* kwlist[] = {"reverse", NULL};
+    int reverse = 0;
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &reverse)) { return NULL; }
     int operator;
     if(reverse) { operator = Py_GT; } else { operator = Py_LT; }
+    double* values = malloc(sizeof(double)*self->length);
+    DLLNode* temp = (DLLNode*)self->head;
+    for(int i = 0; i < self->length; i++) {
+        values[i] = PyFloat_AsDouble(temp->value); if(!values[i]) { return NULL; }
+        temp = (DLLNode*)temp->next;
+    }
+    int length = self->length;
+    int rank;
+    int comm_size;
+    MPI_Init(NULL,NULL);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+    double nodes_per_proc = (double)length/comm_size;
+    int start = ceil(nodes_per_proc * rank);
+    int end = floor(nodes_per_proc * (1 + rank));
+    int size = end - start + 1;
+    merge_sort(values, start, end);
+    int spacing = 1;
+    while(1) {
+        if(rank % spacing != 0) {
+            break;
+        }
+        if(rank / spacing % 2 == 0) { // recieving if true
+
+        }
+        else {}
+    }
+    MPI_Finalize();
 	return Py_NewRef(Py_None); 
 }
 
