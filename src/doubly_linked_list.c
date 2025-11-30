@@ -151,7 +151,7 @@ static PyObject* DoublyLinkedList_append(PyObject* op, PyObject* args, PyObject*
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|i", kwlist,
                                      &object, &forward))
         return NULL;
-    if(forward) {self->cursor = self->tail; self->cursor_pos = self->length-1;}
+    if(forward) {self->cursor = self->tail; self->cursor_pos = self->length-1; if(self->cursor_pos < 0) {self->cursor_pos = 0;}}
     else {self->cursor = self->head; self->cursor_pos = 0;}
     if(DoublyLinkedList_cursor_insert((PyObject*)self, object, forward)) {return NULL;}
     return Py_NewRef(Py_None);
