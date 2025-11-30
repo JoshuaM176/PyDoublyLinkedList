@@ -456,7 +456,7 @@ static int DoublyLinkedList_append_iterator(PyObject* op, PyObject* iterable, in
     if(!iterator){
         return -1;
     }
-    if(forward) {self->cursor = self->tail; self->cursor_pos = self->length-1;}
+    if(forward) {self->cursor = self->tail; self->cursor_pos = self->length-1; if(self->cursor_pos<0){self->cursor_pos=0;}}
     else {self->cursor = self->head; self->cursor_pos = 0;}
     PyObject* item;
     while((item = PyIter_Next(iterator)) != NULL){
