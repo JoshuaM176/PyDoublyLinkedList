@@ -768,8 +768,8 @@ static PyModuleDef_Slot py_doubly_linked_list_module_slots[] = {
 #else
 
 static PyModuleDef_Slot py_doubly_linked_list_module_slots[] = {
-    {Py_mod_exec, dllnode_module_exec},
     {Py_mod_exec, doubly_linked_list_module_exec},
+    {Py_mod_exec, doubly_linked_list_iterator_module_exec},
     {0, NULL}
 };
 
