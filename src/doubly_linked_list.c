@@ -347,11 +347,11 @@ static int DoublyLinkedList_locate(PyObject* op, Py_ssize_t index){
     Py_ssize_t search_distance = index-self->cursor_pos;
     const Py_ssize_t head_distance = index;
     const Py_ssize_t tail_distance = index-(self->length-1);
-    if(abs(head_distance) < abs(search_distance)){
+    if(labs(head_distance) < labs(search_distance)){
         search_node = self->head;
         search_distance = head_distance;
     }
-    else if(abs(tail_distance) < abs(search_distance)){
+    else if(labs(tail_distance) < labs(search_distance)){
         search_node = self->tail;
         search_distance = tail_distance;
     }
@@ -586,7 +586,7 @@ static PyObject* DoublyLinkedList_iter(PyObject* op, PyObject* Py_UNUSED(dummy))
     DoublyLinkedList* self = (DoublyLinkedList*)op;
     DoublyLinkedListIterator* iterator = (DoublyLinkedListIterator*)DoublyLinkedListIterator_new(&DoublyLinkedListIteratorType, NULL, NULL);
     if(!iterator) { return NULL; }
-    if(DoublyLinkedListIterator_init(iterator, PyTuple_Pack(1, self)) == -1) { return NULL; }
+    if(DoublyLinkedListIterator_init((PyObject*)iterator, PyTuple_Pack(1, self)) == -1) { return NULL; }
     return (PyObject*)iterator;
 }
 
@@ -708,7 +708,7 @@ DoublyLinkedListIterator_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static int
 DoublyLinkedListIterator_init(PyObject* op, PyObject *args)
 {
-    DoublyLinkedListIterator* self = (DoublyLinkedList* )op;
+    DoublyLinkedListIterator* self = (DoublyLinkedListIterator*)op;
     PyObject* doubly_linked_list = NULL;
     if (!PyArg_ParseTuple(args, "O", &doubly_linked_list))
         return -1;
