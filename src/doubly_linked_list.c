@@ -58,7 +58,7 @@ DLLNode_new()
 // __Methods__
 
 static PyObject* DLLNode_str(DLLNode* op){
-    DLLNode* self = (DLLNode* )op;
+    DLLNode* self = op;
     PyObject* rtn = PyUnicode_FromFormat("%S", self->value); if(!rtn) {return NULL;}
     return rtn;
 }
