@@ -32,5 +32,6 @@ def test_dereferencing():
 if __name__ == "__main__":
     test_length()
     test_dereferencing()
-    test_list = DoublyLinkedList([1,2,3])
+    test_list = DoublyLinkedList([4,3,2,1,4,3,2,1])
     test_list.merge_sort()
+    print(test_list)

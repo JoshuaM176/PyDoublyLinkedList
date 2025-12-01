@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <math.h>
 #include <mpi.h>
+#include <stdio.h>
 #if PY_MINOR_VERSION < 10
     #define Py_IsNone(x) Py_Is((x), Py_None) // Define these so that we can use them on older versions
     #define Py_Is(x,y) ((x) == (y))
@@ -411,7 +412,7 @@ static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* k
 static void merge_sort(double* list, int start, int end) {
     if(end-start == 0) { return; }
     if(end-start == 1) {
-        if(list[start] < list[end]) {
+        if(list[start] > list[end]) {
             int temp = list[start];
             list[start] = list[end];
             list[end] = temp;
@@ -422,8 +423,8 @@ static void merge_sort(double* list, int start, int end) {
     int start2 = end - (end-start)/2;
     int end1 = start2-1;
     int end2 = end;
-    merge_sort(&list, start1, end1);
-    merge_sort(&list, start2, end2);
+    merge_sort(list, start1, end1);
+    merge_sort(list, start2, end2);
     double* temp_list = malloc(sizeof(double)*(end-start+1));
     int cursor1 = start1;
     int cursor2 = start2;
@@ -441,13 +442,13 @@ static void merge_sort(double* list, int start, int end) {
     }
     if(cursor1 == end1) {
         for(int i = cursor2; i <= end2; i++) {
-            temp_list[cursor] = list[cursor2];
+            temp_list[cursor] = list[i];
             cursor++;
         }
     }
     else{
         for(int i = cursor1; i <= end1; i++) {
-            temp_list[cursor] = list[cursor1];
+            temp_list[cursor] = list[i];
             cursor++;
         }     
     }
@@ -460,7 +461,50 @@ static void merge_sort(double* list, int start, int end) {
     return;
 }
 
-static void merge_proc(double* list, int start, int end, int rank, int sending_rank) {}
+static void merge_proc(double* list, int start, int end, int rank, int sending_rank, int sending_size) {
+    int tag = sending_rank<<4; tag+=rank;
+    double* temp_list = malloc(sizeof(double)*(end-start+1+sending_size));
+    double* recieved_values = malloc(sizeof(double)*sending_size);
+    MPI_Recv(recieved_values, sending_size, MPI_DOUBLE, sending_rank, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    int cursor1 = start;
+    int cursor2 = 0;
+    int cursor = 0;
+    while(cursor1 <= end && cursor2 < sending_size) {
+        if(rank == 0 && sending_rank == 2) {
+        }
+        if(list[cursor1] < recieved_values[cursor2]) {
+            temp_list[cursor] = list[cursor1];
+            cursor1++;
+        }
+        else{
+            temp_list[cursor] = recieved_values[cursor2];
+            cursor2++;
+        }
+        cursor++;
+           if(rank == 0 && sending_rank == 2) {
+        }
+    }
+    if(cursor1 > end) {
+        for(int i = cursor2; i <= sending_size; i++) {
+            temp_list[cursor] = recieved_values[i];
+            cursor++;
+        }
+    }
+    else{
+        for(int i = cursor1; i <= end; i++) {
+            temp_list[cursor] = list[i];
+            cursor++;
+        }     
+    }
+    cursor = start;
+    for(int i = 0; i < end-start+1+sending_size; i++) {
+        list[cursor] = temp_list[i];
+        cursor++;
+    }
+    free(temp_list);
+    free(recieved_values);
+    return;
+}
 
 static PyObject* DoublyLinkedList_merge_sort(PyObject* op, PyObject* args, PyObject* kwds) {
     DoublyLinkedList* self = (DoublyLinkedList* )op;
@@ -483,18 +527,39 @@ static PyObject* DoublyLinkedList_merge_sort(PyObject* op, PyObject* args, PyObj
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     double nodes_per_proc = (double)length/comm_size;
     int start = ceil(nodes_per_proc * rank);
-    int end = floor(nodes_per_proc * (1 + rank));
+    int end = ceil(nodes_per_proc * (1 + rank))-1;
     int size = end - start + 1;
     merge_sort(values, start, end);
     int spacing = 1;
-    while(1) {
+    while(spacing < comm_size) {
         if(rank % spacing != 0) {
             break;
         }
         if(rank / spacing % 2 == 0) { // recieving if true
-
+            if(rank + spacing < comm_size) {
+                int tag = (rank + spacing)<<4; // sending is first 4 bits, recieving is second 4 bits
+                tag += rank;
+                int sending_size; MPI_Recv(&sending_size, 1, MPI_INT, rank+spacing, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                merge_proc(values, start, end, rank, rank+spacing, sending_size);
+                size += sending_size;
+                end += sending_size;
+            }
         }
-        else {}
+        else {
+            int tag = rank<<4; // sending is first 4 bits, recieving is second 4 bits
+            tag += (rank-spacing);
+            printf("Send %i Recieve %i Size %i\n", rank, rank-spacing, size);
+            MPI_Send(&size, 1, MPI_INT, rank-spacing, tag, MPI_COMM_WORLD);
+            MPI_Send(&values[start], size, MPI_DOUBLE, rank-spacing, tag, MPI_COMM_WORLD);
+        }
+        spacing *= 2;
+    }
+    if(1) {
+        temp = (DLLNode*)self->head;
+        for(int i = 0; i < self->length; i++) {
+            temp->value = PyLong_FromLong(values[i]);
+            temp = (DLLNode*)temp->next;
+        }
     }
     MPI_Finalize();
 	return Py_NewRef(Py_None); 
