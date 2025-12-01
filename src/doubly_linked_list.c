@@ -47,7 +47,7 @@ DLLNode_new()
     DLLNode *self = malloc(sizeof(DLLNode));
     self->value = Py_NewRef(Py_None);
     if (self->value == NULL) {
-        free(self);
+        DLLNode_dealloc(self);
         return NULL;
     }
     self->next = NULL;
