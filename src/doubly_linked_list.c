@@ -507,7 +507,6 @@ static void merge_proc(double* list, long long start, long long end, int rank, i
 static PyObject* DoublyLinkedList_merge_sort(PyObject* op, PyObject* args, PyObject* kwds) {
     int rank;
     int comm_size;
-    MPI_Init(NULL,NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     DoublyLinkedList* self = (DoublyLinkedList* )op;
@@ -554,6 +553,7 @@ static PyObject* DoublyLinkedList_merge_sort(PyObject* op, PyObject* args, PyObj
             temp = (DLLNode*)temp->next;
         }
     }
+    free(values);
     MPI_Finalize();
 	return Py_NewRef(Py_None); 
 }
@@ -897,6 +897,7 @@ static int doubly_linked_list_module_exec(PyObject *m)
         Py_DECREF(m);
         return -1;
     }
+    MPI_Init(NULL,NULL);
     return 0;
 }
 
