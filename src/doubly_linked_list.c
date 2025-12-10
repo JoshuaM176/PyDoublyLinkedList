@@ -167,10 +167,10 @@ static PyObject* DoublyLinkedList_index(PyObject* op, PyObject* args, PyObject* 
         self->cursor = (self->cursor)->next;
         self->cursor_pos += 1;
     }
-    PyObject* err_value = PyObject_Str(value); if(!err_value) {return NULL;}
-    PyObject* err_format = PyUnicode_FromFormat("%U not in list", err_value); if(!err_format) {return NULL;}
-    PyErr_SetString(PyExc_ValueError, PyUnicode_AsUTF8(err_format));
-    Py_DECREF(err_value); Py_DECREF(err_format);
+    PyObject* err_format = PyUnicode_FromFormat("%S not in list", value); if(!err_format) {return NULL;}
+    const char* err_str = PyUnicode_AsUTF8(err_format); if(!err_str) {Py_DECREF(err_format); return NULL;}
+    PyErr_SetString(PyExc_ValueError, err_str);
+    Py_DECREF(err_format);
     return NULL;
 }
 
