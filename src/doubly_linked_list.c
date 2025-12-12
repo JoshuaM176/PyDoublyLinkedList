@@ -369,8 +369,6 @@ static int DoublyLinkedList_locate(PyObject* op, Py_ssize_t index){
 }
 
 // Create a new node with value and inserts it forwards or backwards and sets cursor to it.
-// We don't create a reference to the prev node since we can guarentee that as long as it is in the list it will have a reference from its prev anyway.
-// This avoids cycles
 static int DoublyLinkedList_cursor_insert(PyObject* op, PyObject* object, int forward) {
     DoublyLinkedList* self = (DoublyLinkedList*)op;
     self->length += 1;
