@@ -1,3 +1,4 @@
+// TODO rich comparison, repeat option, check errors
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <structmember.h>
@@ -30,6 +31,7 @@ static void
 DLLNode_dealloc(DLLNode* op)
 {
     Py_XDECREF(op->value);
+    Py_XDECREF(op->key);
     free(op);
 }
 
@@ -46,10 +48,11 @@ DLLNode_new()
 {
     DLLNode *self = malloc(sizeof(DLLNode));
     self->value = Py_NewRef(Py_None);
-    if (self->value == NULL) {
+    if (!self->value) {
         DLLNode_dealloc(self);
         return NULL;
     }
+    self->key = NULL;
     self->next = NULL;
     self->prev = NULL;
     return self;
@@ -59,8 +62,7 @@ DLLNode_new()
 
 static PyObject* DLLNode_str(DLLNode* op){
     DLLNode* self = op;
-    PyObject* rtn = PyUnicode_FromFormat("%S", self->value); if(!rtn) {return NULL;}
-    return rtn;
+    return PyUnicode_FromFormat("%S", self->value);
 }
 
 // - - - - - DoublyLinkedList - - - - - //
@@ -89,7 +91,7 @@ static void
 DoublyLinkedList_dealloc(PyObject *op)
 {
     DoublyLinkedList* self = (DoublyLinkedList* )op;
-    if(self->head != NULL){
+    if(self->head){
     DLLNode_dealloc_chain(self->head);}
     Py_TYPE(self)->tp_free(self);
 }
@@ -99,7 +101,7 @@ DoublyLinkedList_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     DoublyLinkedList *self;
     self = (DoublyLinkedList *) type->tp_alloc(type, 0);
-    if (self != NULL) {
+    if (self) {
         self->head = NULL;
         self->tail = NULL;
         self->cursor = NULL;
@@ -304,6 +306,7 @@ static PyObject* DoublyLinkedList_sort(PyObject* op, PyObject* args, PyObject* k
 		temp = self->head;
 		for(int i =0; i < self->length; i++) {
 			Py_DECREF(temp->key);
+            temp->key = NULL;
 			temp = temp->next;
 		}
 		self->cursor_pos = 0;
