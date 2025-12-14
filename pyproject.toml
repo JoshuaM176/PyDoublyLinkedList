@@ -38,7 +38,10 @@ Issues = "https://github.com/JoshuaM176/PyDoublyLinkedList/issues"
 Changelog = "https://github.com/JoshuaM176/PyDoublyLinkedList/blob/main/CHANGES"
 
 
-
 [[tool.setuptools.ext-modules]]
 name = "py_doubly_linked_list.doubly_linked_list"
 sources = ["src/doubly_linked_list.c"]
+
+
+[tool.setuptools.package-data]
+"py_doubly_linked_list" = ["py.typed"]
