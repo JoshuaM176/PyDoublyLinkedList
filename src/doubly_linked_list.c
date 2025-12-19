@@ -539,6 +539,7 @@ static PyObject* DoublyLinkedList_rich_compare(PyObject* self, PyObject* other, 
         {
             if(PyErr_Occurred())
             {
+                Py_XDECREF(iterator);
                 return NULL;
             }
             return Py_False;
@@ -554,6 +555,7 @@ static PyObject* DoublyLinkedList_rich_compare(PyObject* self, PyObject* other, 
     }
     else if(PyErr_Occurred())
     {
+        Py_XDECREF(iterator);
         return NULL;
     }
     return Py_True;
