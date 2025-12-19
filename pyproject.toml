@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "py-doubly-linked-list"
-version = "0.1.2"
+version = "0.1.3"
 description = "A library adding doubly linked lists to python."
 readme = "README.MD"
 requires-python = ">=3.9"
@@ -16,7 +16,7 @@ license-files = [
     "README.MD"
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
 
   "Intended Audience :: Developers",
 
@@ -38,7 +38,10 @@ Issues = "https://github.com/JoshuaM176/PyDoublyLinkedList/issues"
 Changelog = "https://github.com/JoshuaM176/PyDoublyLinkedList/blob/main/CHANGES"
 
 
-
 [[tool.setuptools.ext-modules]]
 name = "py_doubly_linked_list.doubly_linked_list"
 sources = ["src/doubly_linked_list.c"]
+
+
+[tool.setuptools.package-data]
+"py_doubly_linked_list" = ["py.typed"]
