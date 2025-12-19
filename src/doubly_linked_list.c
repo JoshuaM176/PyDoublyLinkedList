@@ -68,6 +68,13 @@ static PyObject* DLLNode_str(DLLNode* op)
     return PyUnicode_FromFormat("%S", self->value);
 }
 
+static PyObject* DLLNode_repr(DLLNode* op)
+{
+    DLLNode* self = op;
+    return PyUnicode_FromFormat("%R", self->value);
+}
+
+
 // - - - - - DoublyLinkedList - - - - - //
 
 typedef struct
@@ -670,14 +677,14 @@ static PyObject* DoublyLinkedList_str(PyObject* op, PyObject* Py_UNUSED(dummy))
     DLLNode* temp = self->head;
     for(Py_ssize_t i = 1; i < self->length; i++)
     {
-        PyObject* node_str = DLLNode_str(temp); if(!node_str) { return NULL; }
+        PyObject* node_str = DLLNode_repr(temp); if(!node_str) { return NULL; }
         PyObject* format_node_str = PyUnicode_FromFormat("%U, ", node_str); if(!format_node_str) { return NULL; }
         new_string = PyUnicode_Concat(string, format_node_str); if(!new_string) { return NULL; }
         Py_DECREF(node_str); Py_DECREF(format_node_str); Py_DECREF(string);
         string = new_string;
         temp = temp->next;
     }
-    new_string = PyUnicode_Concat(string, PyUnicode_FromFormat("%U]", DLLNode_str(temp)));
+    new_string = PyUnicode_Concat(string, PyUnicode_FromFormat("%U]", DLLNode_repr(temp)));
     Py_DECREF(string);
     string = new_string;
     return string;
