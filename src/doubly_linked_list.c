@@ -527,9 +527,15 @@ static PyObject* DoublyLinkedList_rich_compare(PyObject* self, PyObject* other, 
         PyObject* result = DoublyLinkedList_rich_compare(self, other, Py_EQ);
         if(result == Py_False)
         {
-            return Py_True;
+            Py_DECREF(Py_False);
+            Py_RETURN_TRUE;
         }
-        return Py_False;
+        else if(result == Py_True)
+        {
+            Py_DECREF(Py_True);
+            Py_RETURN_FALSE;
+        }
+        return NULL;
     }
     if(op != Py_EQ)
     {
@@ -549,23 +555,23 @@ static PyObject* DoublyLinkedList_rich_compare(PyObject* self, PyObject* other, 
                 Py_XDECREF(iterator);
                 return NULL;
             }
-            return Py_False;
+            Py_RETURN_FALSE;
         }
         int rslt = PyObject_RichCompareBool(temp_node->value, temp_iter, Py_EQ); if(rslt == -1) { return NULL; }
-        if(!rslt) { return Py_False; }
+        if(!rslt) { Py_RETURN_FALSE; }
         temp_node = temp_node->next;
     }
     temp_iter = PyIter_Next(iterator);
     if(temp_iter)
     {
-        return Py_False;
+        Py_RETURN_FALSE;
     }
     else if(PyErr_Occurred())
     {
         Py_XDECREF(iterator);
         return NULL;
     }
-    return Py_True;
+    Py_RETURN_TRUE;
 }
 
 // Mapping Methods
