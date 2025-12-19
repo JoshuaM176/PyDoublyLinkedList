@@ -45,8 +45,21 @@ def test_sort():
     test_list.sort(lambda x : x * -1)
     assert list(test_list) == [8,7,6,5,4,3,2,1]
 
+def test_rich_compare():
+    test_list = DoublyLinkedList([1,2,3,4]) 
+    test_list2 = DoublyLinkedList([1,2,3,4])
+    test_reg_list = [1,2,3,4]
+    test_list3 = DoublyLinkedList([2,1,3,4])
+    test_list4 = DoublyLinkedList([1,2,3,4,5])
+    assert test_list == test_list2
+    assert test_list == test_reg_list
+    assert test_list != test_list3
+    assert test_list != test_list4
+    assert test_list4 != test_list
+
 if __name__ == "__main__":
     test_indexing()
     test_length()
     test_dereferencing()
     test_sort()
+    test_rich_compare()

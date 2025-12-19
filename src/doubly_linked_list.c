@@ -513,6 +513,52 @@ static int DoublyLinkedList_append_iterator(PyObject* op, PyObject* iterable, in
     return 0;
 }
 
+static PyObject* DoublyLinkedList_rich_compare(PyObject* self, PyObject* other, int op)
+{
+    if(op == Py_NE)
+    {
+        PyObject* result = DoublyLinkedList_rich_compare(self, other, Py_EQ);
+        if(result == Py_False)
+        {
+            return Py_True;
+        }
+        return Py_False;
+    }
+    if(op != Py_EQ)
+    {
+        return Py_NotImplemented;
+    }
+    PyObject* iterator = PyObject_GetIter(other);
+    if(!iterator) { return Py_False; }
+    DLLNode* temp_node = ((DoublyLinkedList*)self)->head;
+    PyObject* temp_iter;
+    while(temp_node)
+    {
+        temp_iter = PyIter_Next(iterator);
+        if(!temp_iter)
+        {
+            if(PyErr_Occurred())
+            {
+                return NULL;
+            }
+            return Py_False;
+        }
+        int rslt = PyObject_RichCompareBool(temp_node->value, temp_iter, Py_EQ); if(rslt == -1) { return NULL; }
+        if(!rslt) { return Py_False; }
+        temp_node = temp_node->next;
+    }
+    temp_iter = PyIter_Next(iterator);
+    if(temp_iter)
+    {
+        return Py_False;
+    }
+    else if(PyErr_Occurred())
+    {
+        return NULL;
+    }
+    return Py_True;
+}
+
 // Mapping Methods
 
 static PyObject* DoublyLinkedList_subscript(PyObject* op, PyObject* slice){
@@ -690,6 +736,7 @@ static PyTypeObject DoublyLinkedListType =
     .tp_init = (initproc)DoublyLinkedList_init,
     .tp_dealloc = (destructor)DoublyLinkedList_dealloc,
     .tp_str = (reprfunc)DoublyLinkedList_str,
+    .tp_richcompare = (richcmpfunc)DoublyLinkedList_rich_compare,
     .tp_methods = DoublyLinkedList_methods,
     .tp_as_sequence = &DoublyLinkedList_sequence,
     .tp_as_mapping = &DoublyLinkedList_map
