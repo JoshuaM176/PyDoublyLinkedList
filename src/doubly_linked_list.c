@@ -39,16 +39,20 @@ DLLNode_dealloc(DLLNode* op)
 
 static void DLLNode_dealloc_chain(DLLNode* op)
 {
-    Py_XDECREF(op->value);
-    if(op->next != NULL) {
-        DLLNode_dealloc_chain(op->next);
+    DLLNode* temp = op;
+    while(op)
+    {
+        temp = op->next;
+        Py_XDECREF(op->value);
+        Py_XDECREF(op->key);
+        free(op);
+        op = temp;
     }
-    free(op);
 }
 
 static DLLNode* DLLNode_new()
 {
-    DLLNode *self = malloc(sizeof(DLLNode));
+    DLLNode* self = malloc(sizeof(DLLNode));
     self->value = Py_NewRef(Py_None);
     if (!self->value) {
         DLLNode_dealloc(self);
